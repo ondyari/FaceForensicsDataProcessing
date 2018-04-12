@@ -40,8 +40,8 @@ def compress_whole_folder_with_ffmpeg_h264(data_path, output_path, crf=0,
     for folder in os.listdir(data_path):
         if folder in ['test', 'train', 'val']:
             for subfolder in os.listdir(join(data_path, folder)):
-                print(folder, subfolder)
                 if subfolder in ['altered', 'original']:
+                    print(folder, subfolder)
                     compress_with_ffmpeg_h264(data_path=join(data_path, folder,
                                                              subfolder),
                                               output_path=join(output_path,
@@ -61,7 +61,10 @@ if __name__ == '__main__':
                         help="Either 'single_folder' or 'whole_dataset'")
     parser.add_argument('--crf', type=int, default=0,
                         help='Compression coefficient, see '
-                             'https://trac.ffmpeg.org/wiki/Encode/H.264')
+                             'https://trac.ffmpeg.org/wiki/Encode/H.264. '
+                             '0 = lossless compression, '
+                             'up to ~23 = visually lossless'
+                        )
 
     config = parser.parse_args()
 
