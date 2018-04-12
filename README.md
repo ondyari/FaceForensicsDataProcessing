@@ -14,17 +14,18 @@ If you have not received a response within a week, it is likely that your email 
 ### Download
 
 Use the download-FaceForensics.py script to download the dataset you are interested in.
-You can choose to download H.264 lossless compressed or raw videos. Note that the dataset size
-is ~130gb and ~3,5tb respectively.
-
-**source-to-target:** python download.py -d \<'compressed' or 'raw'> \<output folder>   
-**self-reenactment:** python download.py -d \<'selfreenactment_compressed' or 'selfreenactment_raw'> \<output folder>  
-**cropped self-reenactment images:** python download.py -d selfreenactment_images' \<output folder>  
-**only original videos:** python download.py -d original_videos \<output filename>
-
-For more information, e.g. how to download only a specific part of the dataset, use the '-h' option.
+You can choose to download H.264 lossless compressed and raw videos, the original videos as well as the
+self-reenactment images that were used for our refinement task. Note that the dataset size
+is ~130gb for lossless compressed and ~3,5tb for raw videos. For more information about the download script usage, use the '-h' option.
 
 ### Data Organization
+
+**Video origin**  
+All videos were downloaded from youtube. We used the youtube8m dataset to filter
+for videos with tags "face", "newscaster" and "newsprogram". In addition we also
+used videos that we found on youtube with these tags. Afterwards, we used the
+Viola-Jones face detector to gather sequences of minimum length 300 that contain a single
+face. These sequences were then checked manually for occlusions.
 
 **Folder structure**  
 We provide the split we used for the final numbers in our paper which divides the 1004 videos in
