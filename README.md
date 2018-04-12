@@ -60,8 +60,11 @@ All video files are formatted as follows
 where a youtube id is always 11 characters long.
 
 **Stats**  
-For more information about the origin of our original videos as well as other stats about
- the dataset please consult files in the stats folder.
+For stats about the dataset please consult files in the stats folder.
+
+**Video origins**  
+You can download the youtube id's together with additional information (like fps) 
+as well as the coordinates of our extracted faces under [this link](http://kaldir.vc.in.tum.de/FaceForensics/v1/faceforensics_original_video_information.tar.gz).
 
 
 ## Citation
