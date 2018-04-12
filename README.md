@@ -14,7 +14,7 @@ If you have not received a response within a week, it is likely that your email 
 ### Download
 
 Use the download-FaceForensics.py script to download the dataset you are interested in.
-You can choose to download H.264 lossless compressed and raw videos, the original videos as well as the
+You can choose to download H.264 lossless compressed and raw videos, the original videos as well as the cropped
 self-reenactment images that were used for our refinement task. Note that the dataset size
 is ~130gb for lossless compressed and ~3,5tb for raw videos. For more information about the download script usage, use the '-h' option.
 
