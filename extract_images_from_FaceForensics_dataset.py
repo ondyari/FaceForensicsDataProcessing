@@ -14,6 +14,18 @@ Usage:
         -i <input path with test/train/val folders>
         -o <output_path>
         --absolute_num 10
+    # Extract from single folder
+    python extract_images_from_FaceForensics_dataset.py
+        -i <input path, i.e. test/val or train folder>
+        -o <output_path>
+        --absolute_num 10
+        -m single_folder
+    # Extract from compressed videos but with uncompressed masks
+    python extract_images_from_FaceForensics_dataset.py
+        -i <input path with test/train/val folders>
+        -o <output_path>
+        --absolute_num 10
+        --mask_data_path <input path with test/train/val folders>
     # Full uncropped images + face masks
     python extract_images_from_FaceForensics_dataset.py
         -i <input path with test/train/val folders>
@@ -31,8 +43,8 @@ import progressbar      # pip install progressbar2
 import numpy as np
 
 
-# Get non zero elements for mask
 def get_non_zero_bb(img):
+    # Get non zero elements for mask to get mask area
     a = np.where(img != 255)
     bbox = np.min(a[0]), np.max(a[0]), np.min(a[1]), np.max(a[1])
     return bbox
