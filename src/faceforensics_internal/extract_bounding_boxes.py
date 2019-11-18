@@ -8,7 +8,9 @@ from joblib import delayed
 from joblib import Parallel
 from tqdm import tqdm
 
-from utils import Compression, DataType, FaceForensicsDataStructure
+from faceforensics_internal.utils import Compression
+from faceforensics_internal.utils import DataType
+from faceforensics_internal.utils import FaceForensicsDataStructure
 
 
 def extract_bounding_boxes_from_video(
@@ -24,8 +26,6 @@ def extract_bounding_boxes_from_video(
     max_num_frames = min(
         max_num_frames, int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
     )
-    width = video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)
-    height = video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
     bounding_boxes = {}
     frame_count = -1
@@ -56,7 +56,7 @@ def extract_bounding_boxes_from_video(
 
 @click.command()
 @click.option("--source_dir_root", required=True, type=click.Path(exists=True))
-@click.option("--target_dir_root", required=True, type=click.Path(exists=True))
+@click.option("--target_dir_root", required=True, type=click.Path(exists=False))
 def extract_bounding_boxes_from_videos(
     source_dir_root, target_dir_root, face_detector_model="hog"
 ):
@@ -79,7 +79,6 @@ def extract_bounding_boxes_from_videos(
             data_type=str(DataType.bounding_boxes),
         )
 
-        counter = 0
         # zip all 3 together and iterate
         for source_sub_dir, target_sub_dir in zip(
             source_dir_data_structure.get_subdirs(),
