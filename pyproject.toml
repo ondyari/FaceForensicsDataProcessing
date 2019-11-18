@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "faceforensics_internal"
+version = "0.1.0"
+description = "Internal library for easier usage of the face forensics dataset."
+authors = ["Sebastian Fellner <fellnerseb@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+click = "^7.0"
+face_recognition = "^1.2"
+joblib = "^0.14.0"
+tqdm = "^4.38"
+opencv-python = "^4.1"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
