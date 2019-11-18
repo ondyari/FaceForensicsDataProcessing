@@ -1,4 +1,6 @@
 """Extract all face bounding boxes from videos."""
+import json
+import multiprocessing as mp
 from pathlib import Path
 
 import click
@@ -8,24 +10,19 @@ from joblib import delayed
 from joblib import Parallel
 from tqdm import tqdm
 
-from faceforensics_internal.utils import Compression
-from faceforensics_internal.utils import DataType
-from faceforensics_internal.utils import FaceForensicsDataStructure
+from utils import Compression
+from utils import DataType
+from utils import FaceForensicsDataStructure
 
 
-def extract_bounding_boxes_from_video(
-    video_path, target_sub_dir, face_detector_model, max_num_frames
-):
+def extract_bounding_boxes_from_video(video_path: Path, target_sub_dir: Path):
 
-    output_path = Path(target_sub_dir / video_path.name).with_suffix(".json")
+    output_path = (target_sub_dir / video_path.name).with_suffix(".json")
     if output_path.exists():
         return
 
     # Get video capture
     video_capture = cv2.VideoCapture(str(video_path))
-    max_num_frames = min(
-        max_num_frames, int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
-    )
 
     bounding_boxes = {}
     frame_count = -1
@@ -39,27 +36,18 @@ def extract_bounding_boxes_from_video(
             video_capture.release()
             break
 
-        if frame_count == max_num_frames:
-            video_capture.release()
-            break
-
-        face_locations = face_recognition.face_locations(
-            frame, model=face_detector_model
-        )
+        face_locations = face_recognition.face_locations(frame)
 
         bounding_boxes[f"{frame_count:04d}"] = face_locations
 
-    print(bounding_boxes)
-    # with open(output_path, "w") as f:
-    #     json.dump(bounding_boxes, f)
+    with open(output_path, "w") as f:
+        json.dump(bounding_boxes, f)
 
 
 @click.command()
 @click.option("--source_dir_root", required=True, type=click.Path(exists=True))
 @click.option("--target_dir_root", required=True, type=click.Path(exists=False))
-def extract_bounding_boxes_from_videos(
-    source_dir_root, target_dir_root, face_detector_model="hog"
-):
+def extract_bounding_boxes_from_videos(source_dir_root, target_dir_root):
     target_dir_root = Path(target_dir_root)
     target_dir_root.mkdir(parents=True, exist_ok=True)
 
@@ -92,16 +80,13 @@ def extract_bounding_boxes_from_videos(
             print(f"Processing {source_sub_dir.parts[-2]}, {source_sub_dir.parts[-3]}")
 
             # extract for each folder (-> video) the face information
-            Parallel(n_jobs=8)(
+            Parallel(n_jobs=mp.cpu_count())(
                 delayed(
                     lambda _video_path: extract_bounding_boxes_from_video(
-                        _video_path,
-                        target_sub_dir,
-                        face_detector_model,
-                        max_num_frames=3,
+                        _video_path, target_sub_dir,
                     )
                 )(video_path)
-                for video_path in tqdm(sorted(source_sub_dir.iterdir())[:3])
+                for video_path in tqdm(sorted(source_sub_dir.iterdir()))
             )
 
 
