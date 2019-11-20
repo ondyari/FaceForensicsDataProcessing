@@ -47,7 +47,12 @@ def extract_bounding_boxes_from_video(video_path: Path, target_sub_dir: Path):
 @click.command()
 @click.option("--source_dir_root", required=True, type=click.Path(exists=True))
 @click.option("--target_dir_root", required=True, type=click.Path(exists=False))
-def extract_bounding_boxes_from_videos(source_dir_root, target_dir_root):
+@click.option("--methods", "-m", multiple=True, type=click.STRING)
+def extract_bounding_boxes_from_videos(
+    source_dir_root,
+    target_dir_root,
+    methods=("youtube", "Deepfakes", "Face2Face", "FaceSwap", "NeuralTextures"),
+):
     target_dir_root = Path(target_dir_root)
     target_dir_root.mkdir(parents=True, exist_ok=True)
 
@@ -56,6 +61,7 @@ def extract_bounding_boxes_from_videos(source_dir_root, target_dir_root):
         # use FaceForensicsDataStructure to iterate over the correct image folders
         source_dir_data_structure = FaceForensicsDataStructure(
             source_dir_root,
+            methods=methods,
             compression=str(compression),
             data_type=str(DataType.videos),
         )
