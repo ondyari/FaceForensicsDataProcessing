@@ -2,11 +2,12 @@
 name = "faceforensics_internal"
 version = "0.1.0"
 description = "Internal library for easier usage of the face forensics dataset."
-authors = ["Sebastian Fellner <fellnerseb@gmail.com>"]
+authors = ["Sebastian Fellner <fellnerseb@gmail.com>", "Christoph Clement <christoph.clement@tum.de>"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
 click = "^7.0"
+dlib = "^19.18"
 face_recognition = "^1.2"
 joblib = "^0.14.0"
 tqdm = "^4.38"
