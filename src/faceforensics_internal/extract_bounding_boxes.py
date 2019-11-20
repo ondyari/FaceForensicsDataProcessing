@@ -10,9 +10,9 @@ from joblib import delayed
 from joblib import Parallel
 from tqdm import tqdm
 
-from utils import Compression
-from utils import DataType
-from utils import FaceForensicsDataStructure
+from faceforensics_internal.utils import Compression
+from faceforensics_internal.utils import DataType
+from faceforensics_internal.utils import FaceForensicsDataStructure
 
 
 def extract_bounding_boxes_from_video(video_path: Path, target_sub_dir: Path):
@@ -53,14 +53,15 @@ def extract_bounding_boxes_from_videos(source_dir_root, target_dir_root):
 
     for compression in Compression:
 
-        # use FaceForensicsDataStructure to iterate elegantly over the correct image folders
+        # use FaceForensicsDataStructure to iterate over the correct image folders
         source_dir_data_structure = FaceForensicsDataStructure(
             source_dir_root,
             compression=str(compression),
             data_type=str(DataType.videos),
         )
 
-        # this will be used to iterate the same way as the source dir -> create same data structure again
+        # this will be used to iterate the same way as the source dir
+        # -> create same data structure again
         target_dir_data_structure = FaceForensicsDataStructure(
             target_dir_root,
             compression=str(compression),
@@ -83,7 +84,7 @@ def extract_bounding_boxes_from_videos(source_dir_root, target_dir_root):
             Parallel(n_jobs=mp.cpu_count())(
                 delayed(
                     lambda _video_path: extract_bounding_boxes_from_video(
-                        _video_path, target_sub_dir,
+                        _video_path, target_sub_dir
                     )
                 )(video_path)
                 for video_path in tqdm(sorted(source_sub_dir.iterdir()))
