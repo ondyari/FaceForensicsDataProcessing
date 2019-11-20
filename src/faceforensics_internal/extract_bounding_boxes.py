@@ -68,7 +68,7 @@ def extract_bounding_boxes_from_videos(source_dir_root, target_dir_root):
             data_type=str(DataType.bounding_boxes),
         )
 
-        # zip all 3 together and iterate
+        # zip source and target structure to iterate over both simultaneously
         for source_sub_dir, target_sub_dir in zip(
             source_dir_data_structure.get_subdirs(),
             target_dir_data_structure.get_subdirs(),
