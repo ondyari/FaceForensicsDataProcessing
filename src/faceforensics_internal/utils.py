@@ -1,4 +1,5 @@
 import itertools
+import logging
 from enum import auto
 from enum import Enum
 from pathlib import Path
@@ -90,3 +91,16 @@ class FaceForensicsDataStructure:
                 self.methods, self.compressions, self.data_types
             )
         ]
+
+
+def _img_name_to_int(img: Path):
+    return int(img.name.split(".")[0])
+
+
+logging.basicConfig(
+    format="%(asctime)s %(levelname)-8s %(message)s",
+    level=logging.INFO,
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+cl_logger = logging.getLogger()
