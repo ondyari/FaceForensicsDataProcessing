@@ -1,6 +1,10 @@
-from enum import auto, Enum
+import itertools
+from enum import auto
+from enum import Enum
 from pathlib import Path
+from typing import Iterable
 from typing import List
+from typing import Union
 
 
 class StrEnum(Enum):
@@ -24,28 +28,65 @@ class DataType(StrEnum):
     videos = auto()
 
 
+class Method:
+    REAL_DIR = "original_sequences/"
+    FAKE_DIR = "manipulated_sequences/"
+
+    def __init__(self, name: str, is_real: bool):
+        self.name = name
+        self.is_real = is_real
+
+    def get_dir_str(self):
+        if self.is_real:
+            return self.REAL_DIR + self.name
+        else:
+            return self.FAKE_DIR + self.name
+
+    def __str__(self):
+        return self.name
+
+
+ACTORS = Method("actors", is_real=True)
+YOUTUBE = Method("youtube", is_real=True)
+
+DEEP_FAKE_DETECTION = Method("DeepFakeDetection", is_real=False)
+DEEPFAKES = Method("Deepfakes", is_real=False)
+FACE2FACE = Method("Face2Face", is_real=False)
+FACE_SWAP = Method("FaceSwap", is_real=False)
+NEURAL_TEXTURES = Method("NeuralTextures", is_real=False)
+
+
 class FaceForensicsDataStructure:
-    SUB_DIRECTORIES = ["original_sequences/youtube"] + [
-        "manipulated_sequences/" + manipulated_sequence
-        for manipulated_sequence in [
-            "Deepfakes",
-            "Face2Face",
-            "FaceSwap",
-            "NeuralTextures",
-        ]
-    ]
+
+    METHODS = {
+        YOUTUBE.name: YOUTUBE,
+        DEEPFAKES.name: DEEPFAKES,
+        FACE2FACE.name: FACE2FACE,
+        FACE_SWAP.name: FACE_SWAP,
+        NEURAL_TEXTURES.name: NEURAL_TEXTURES,
+    }
+
+    ALL_METHODS = list(METHODS.keys())
 
     def __init__(
-        self, root_dir: str, compression: str = "raw", data_type: str = "images"
+        self,
+        root_dir: str,
+        methods: Iterable[str],
+        compressions: Iterable[Union[str, Compression]] = (Compression.raw,),
+        data_types: List[Union[str, DataType]] = (DataType.face_images,),
     ):
         self.root_dir = Path(root_dir)
         if not self.root_dir.exists():
             raise FileNotFoundError(f"{self.root_dir} does not exist!")
-        self.data_type = data_type
-        self.compression = compression
+        self.methods = [self.METHODS[method] for method in methods]
+        self.data_types = data_types
+        self.compressions = compressions
 
     def get_subdirs(self) -> List[Path]:
+
         return [
-            self.root_dir / subdir / self.compression / self.data_type
-            for subdir in self.SUB_DIRECTORIES
+            self.root_dir / method.get_dir_str() / str(compression) / str(data_type)
+            for method, compression, data_type in itertools.product(
+                self.methods, self.compressions, self.data_types
+            )
         ]
