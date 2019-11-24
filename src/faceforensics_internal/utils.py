@@ -7,6 +7,8 @@ from typing import Iterable
 from typing import List
 from typing import Union
 
+import numpy as np
+
 
 class StrEnum(Enum):
     def __str__(self):
@@ -104,3 +106,17 @@ logging.basicConfig(
 )
 
 cl_logger = logging.getLogger()
+
+
+def get_mask_bounding_box(mask):
+    a = np.where(mask != 0)
+    try:
+        y1, y2, x1, x2 = np.min(a[0]), np.max(a[0]), np.min(a[1]), np.max(a[1])
+        top = y1
+        right = x2
+        bottom = y2
+        left = x1
+        mask_bounding_box = int(top), int(right), int(bottom), int(left)
+    except ValueError:
+        return None
+    return mask_bounding_box
