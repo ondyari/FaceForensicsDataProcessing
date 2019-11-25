@@ -145,7 +145,32 @@ def _filter_face_information(face_information: Path, masks: Union[Path, None], o
                 resulting_face_locations[frame] = last_location
                 continue
 
-            locations = sorted(locations, reverse=True, key=_largest_face_location)
+            if not last_location:
+                locations = sorted(locations, reverse=True, key=_largest_face_location)
+                mask_bounding_box = masks_json[frame]
+                if len(mask_bounding_box) == 0:
+                    last_location = locations[0]
+                    resulting_face_locations[frame] = last_location
+                    continue
+                else:
+                    mask_bounding_box = mask_bounding_box[0]
+
+                iou = get_iou(mask_bounding_box, locations[0])
+
+                if iou > 0.1:
+                    last_location = locations[0]  # largest face
+                    resulting_face_locations[frame] = last_location
+                    continue
+                else:
+                    # in all other cases add the mask
+                    last_location = mask_bounding_box
+                    resulting_face_locations[frame] = mask_bounding_box
+                    continue
+
+            locations = sorted(
+                locations, key=lambda location: closest_center(last_location, location)
+            )
+
             mask_bounding_box = masks_json[frame]
             # if there is no mask make sure the largest face is close enough to the last
             # face tracked
@@ -168,11 +193,6 @@ def _filter_face_information(face_information: Path, masks: Union[Path, None], o
 
             # if iou is big enough its possible to add face
             if iou > 0.1:
-                if not last_location:  # for no last location add it always
-                    last_location = locations[0]  # largest face
-                    resulting_face_locations[frame] = last_location
-                    continue
-
                 if close_enough(
                     last_location, locations[0]
                 ):  # also if the face is close
