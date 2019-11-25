@@ -50,7 +50,7 @@ class FileList:
         split: str,
         sampled_images_idx: np.array,
     ):
-        nb_samples_offset = len(self.samples_idx[split])
+        nb_samples_offset = len(self.samples[split])
         sampled_images_idx = (sampled_images_idx + nb_samples_offset).tolist()
         self.samples_idx[split] += sampled_images_idx
 
