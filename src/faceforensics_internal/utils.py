@@ -1,11 +1,12 @@
 import itertools
-import logging
 from enum import auto
 from enum import Enum
 from pathlib import Path
 from typing import Iterable
 from typing import List
 from typing import Union
+
+import numpy as np
 
 
 class StrEnum(Enum):
@@ -17,6 +18,7 @@ class Compression(StrEnum):
     raw = auto()
     c23 = auto()
     c40 = auto()
+    masks = auto()
 
 
 class DataType(StrEnum):
@@ -25,7 +27,6 @@ class DataType(StrEnum):
     face_images_tracked = auto()
     full_images = auto()
     face_information = auto()
-    masks = auto()
     videos = auto()
 
 
@@ -74,7 +75,7 @@ class FaceForensicsDataStructure:
         root_dir: str,
         methods: Iterable[str],
         compressions: Iterable[Union[str, Compression]] = (Compression.raw,),
-        data_types: List[Union[str, DataType]] = (DataType.face_images,),
+        data_types: Iterable[Union[str, DataType]] = (DataType.face_images,),
     ):
         self.root_dir = Path(root_dir)
         if not self.root_dir.exists():
@@ -97,10 +98,15 @@ def _img_name_to_int(img: Path):
     return int(img.name.split(".")[0])
 
 
-logging.basicConfig(
-    format="%(asctime)s %(levelname)-8s %(message)s",
-    level=logging.INFO,
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-
-cl_logger = logging.getLogger()
+def get_mask_bounding_boxes(mask: np.ndarray) -> List[List[int]]:
+    a = np.where(mask != 0)
+    try:
+        y1, y2, x1, x2 = np.min(a[0]), np.max(a[0]), np.min(a[1]), np.max(a[1])
+        top = y1
+        right = x2
+        bottom = y2
+        left = x1
+        mask_bounding_box = [[int(top), int(right), int(bottom), int(left)]]
+    except ValueError:
+        return []
+    return mask_bounding_box
