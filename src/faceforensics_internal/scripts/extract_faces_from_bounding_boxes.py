@@ -1,4 +1,5 @@
 import json
+import logging
 from pathlib import Path
 
 import click
@@ -11,16 +12,14 @@ from faceforensics_internal.utils import Compression
 from faceforensics_internal.utils import DataType
 from faceforensics_internal.utils import FaceForensicsDataStructure
 
+logger = logging.getLogger(__file__)
+
 
 def _extract_face(img_path, face, face_images_dir):
     if not face:
         return False
     img = cv2.imread(str(img_path))
-    top, right, bottom, left = face
-    x = left
-    y = top
-    w = right - x
-    h = bottom - y
+    x, y, w, h = face
     cropped_face = img[y : y + h, x : x + w]  # noqa E203
     cv2.imwrite(str(face_images_dir / img_path.name), cropped_face)
     return True
@@ -68,18 +67,12 @@ def extract_faces(data_dir_root, compressions):
         methods=FaceForensicsDataStructure.ALL_METHODS,
     )
 
-    # iterate over all manipulation methods and original videos
-    methods = tqdm(
-        zip(
-            full_images_data_structure.get_subdirs(),
-            bounding_boxes_dir_data_structure.get_subdirs(),
-            face_images_dir_data_structure.get_subdirs(),
-        ),
-        position=0,
-        leave=False,
-    )
-    for full_images, bounding_boxes, face_images in methods:
-        methods.set_description(f"Current method: {full_images.parents[1].name}")
+    for full_images, bounding_boxes, face_images in zip(
+        full_images_data_structure.get_subdirs(),
+        bounding_boxes_dir_data_structure.get_subdirs(),
+        face_images_dir_data_structure.get_subdirs(),
+    ):
+        logger.info(f"Current method: {full_images.parents[1].name}")
 
         face_images.mkdir(exist_ok=True)
 
@@ -90,9 +83,7 @@ def extract_faces(data_dir_root, compressions):
                     _video_folder, bounding_boxes, face_images
                 )
             )(video_folder)
-            for video_folder in tqdm(
-                sorted(full_images.iterdir()), position=1, leave=False
-            )
+            for video_folder in tqdm(sorted(full_images.iterdir()))
         )
 
 

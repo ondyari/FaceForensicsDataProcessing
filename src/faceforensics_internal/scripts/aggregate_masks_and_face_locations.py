@@ -111,6 +111,18 @@ def face_location_to_center(face_location):
     return x + int(0.5 * w), y + int(0.5 * h)
 
 
+def trbl_to_xywh(face_location_trbl):
+
+    top, right, bottom, left = face_location_trbl
+
+    x = left
+    y = top
+    w = right - x
+    h = bottom - y
+
+    return [x, y, w, h]
+
+
 def _filter_face_information(face_information: Path, masks: Union[Path, None], output):
     last_location = None
     resulting_face_locations = {}
@@ -145,6 +157,8 @@ def _filter_face_information(face_information: Path, masks: Union[Path, None], o
                 resulting_face_locations[frame] = last_location
                 continue
 
+            locations = map(trbl_to_xywh, locations)
+
             if not last_location:
                 locations = sorted(locations, reverse=True, key=_largest_face_location)
                 mask_bounding_box = masks_json[frame]
@@ -153,7 +167,7 @@ def _filter_face_information(face_information: Path, masks: Union[Path, None], o
                     resulting_face_locations[frame] = last_location
                     continue
                 else:
-                    mask_bounding_box = mask_bounding_box[0]
+                    mask_bounding_box = trbl_to_xywh(mask_bounding_box[0])
 
                 iou = get_iou(mask_bounding_box, locations[0])
 
@@ -187,7 +201,7 @@ def _filter_face_information(face_information: Path, masks: Union[Path, None], o
                     resulting_face_locations[frame] = None
                     continue
             else:
-                mask_bounding_box = mask_bounding_box[0]
+                mask_bounding_box = trbl_to_xywh(mask_bounding_box[0])
 
             iou = get_iou(mask_bounding_box, locations[0])
 
@@ -226,6 +240,8 @@ def _filter_face_information(face_information: Path, masks: Union[Path, None], o
                 last_location = None
                 resulting_face_locations[frame] = last_location
                 continue
+
+            locations = map(trbl_to_xywh, locations)
 
             if not last_location:
                 locations = sorted(locations, reverse=True, key=_largest_face_location)
