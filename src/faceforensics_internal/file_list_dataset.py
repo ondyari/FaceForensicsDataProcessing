@@ -1,4 +1,5 @@
 import json
+import logging
 from pathlib import Path
 from pprint import pformat
 from shutil import copy2
@@ -15,7 +16,8 @@ from tqdm import tqdm
 from faceforensics_internal.splits import TEST_NAME
 from faceforensics_internal.splits import TRAIN_NAME
 from faceforensics_internal.splits import VAL_NAME
-from faceforensics_internal.utils import cl_logger
+
+logger = logging.getLogger(__file__)
 
 
 class FileList:
@@ -85,7 +87,7 @@ class FileList:
     def get_dataset(self, split, transform=None, sequence_length: int = 1) -> Dataset:
         """Get dataset by using this instance."""
         if sequence_length > self.min_sequence_length:
-            cl_logger.warning(
+            logger.warning(
                 f"{sequence_length}>{self.min_sequence_length}. Trying to load data that"
                 f"does not exist might raise an error in the FileListDataset."
             )
@@ -154,7 +156,7 @@ class FileListDataset(VisionDataset):
         try:
             index = self.samples_idx[index]
         except IndexError:
-            cl_logger.error(f"{index} is out of range {len(self.samples_idx)}")
+            logger.error(f"{index} is out of range {len(self.samples_idx)}")
         samples = self._samples[
             index - self.sequence_length + 1 : index + 1  # noqa: 203
         ]

@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import List
 
@@ -12,10 +13,11 @@ from faceforensics_internal.splits import TRAIN_NAME
 from faceforensics_internal.splits import VAL
 from faceforensics_internal.splits import VAL_NAME
 from faceforensics_internal.utils import _img_name_to_int
-from faceforensics_internal.utils import cl_logger
 from faceforensics_internal.utils import Compression
 from faceforensics_internal.utils import DataType
 from faceforensics_internal.utils import FaceForensicsDataStructure
+
+logger = logging.getLogger(__file__)
 
 
 def _get_min_sequence_length(source_dir_data_structure):
@@ -71,7 +73,7 @@ def _create_file_list(
 
     _min_sequence_length = _get_min_sequence_length(source_dir_data_structure)
     if _min_sequence_length < samples_per_video:
-        cl_logger.warning(
+        logger.warning(
             f"There is a sequence that is sequence that has less frames "
             f"then you would like to sample: "
             f"{_min_sequence_length}<{samples_per_video}"
@@ -117,7 +119,7 @@ def _create_file_list(
                     )
 
     file_list.save(output_file)
-    cl_logger.info(f"{output_file} created.")
+    logger.info(f"{output_file} created.")
     return file_list
 
 
@@ -181,7 +183,7 @@ def create_file_list(
 
     for split in [TRAIN_NAME, VAL_NAME, TEST_NAME]:
         data_set = FileList.get_dataset_form_file(output_file, split)
-        cl_logger.info(f"{split}-data-set: {data_set}")
+        logger.info(f"{split}-data-set: {data_set}")
 
 
 if __name__ == "__main__":
