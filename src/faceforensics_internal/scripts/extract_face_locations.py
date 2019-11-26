@@ -15,7 +15,7 @@ from faceforensics_internal.utils import DataType
 from faceforensics_internal.utils import FaceForensicsDataStructure
 
 
-def extract_bounding_boxes_from_video(video_path: Path, target_sub_dir: Path):
+def extract_face_locations_from_video(video_path: Path, target_sub_dir: Path):
 
     output_path = (target_sub_dir / video_path.name).with_suffix(".json")
     if output_path.exists():
@@ -51,7 +51,7 @@ def extract_bounding_boxes_from_video(video_path: Path, target_sub_dir: Path):
 @click.option(
     "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.ALL_METHODS
 )
-def extract_bounding_boxes_from_videos(
+def extract_face_locations_from_videos(
     source_dir_root, target_dir_root, compressions, methods
 ):
     target_dir_root = Path(target_dir_root)
@@ -88,7 +88,7 @@ def extract_bounding_boxes_from_videos(
         # extract for each folder (-> video) the face information
         Parallel(n_jobs=mp.cpu_count())(
             delayed(
-                lambda _video_path: extract_bounding_boxes_from_video(
+                lambda _video_path: extract_face_locations_from_video(
                     _video_path, target_sub_dir
                 )
             )(video_path)
@@ -97,4 +97,4 @@ def extract_bounding_boxes_from_videos(
 
 
 if __name__ == "__main__":
-    extract_bounding_boxes_from_videos()
+    extract_face_locations_from_videos()
