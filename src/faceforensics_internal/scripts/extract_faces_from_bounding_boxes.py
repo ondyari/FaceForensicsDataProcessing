@@ -43,28 +43,31 @@ def _extract_faces_from_video(
 
 
 @click.command()
-@click.option("--data_dir_root", required=True, type=click.Path(exists=True))
-@click.option("--compressions", default=[Compression.c40])
-def extract_faces(data_dir_root, compressions):
+@click.option("--source_dir_root", required=True, type=click.Path(exists=True))
+@click.option("--compressions", "-c", default=[Compression.c40])
+@click.option(
+    "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.ALL_METHODS
+)
+def extract_faces(source_dir_root, compressions, methods):
     full_images_data_structure = FaceForensicsDataStructure(
-        data_dir_root,
+        source_dir_root,
         compressions=compressions,
         data_types=(DataType.full_images,),
-        methods=FaceForensicsDataStructure.ALL_METHODS,
+        methods=methods,
     )
 
     bounding_boxes_dir_data_structure = FaceForensicsDataStructure(
-        data_dir_root,
+        source_dir_root,
         compressions=compressions,
         data_types=(DataType.bounding_boxes,),
-        methods=FaceForensicsDataStructure.ALL_METHODS,
+        methods=methods,
     )
 
     face_images_dir_data_structure = FaceForensicsDataStructure(
-        data_dir_root,
+        source_dir_root,
         compressions=compressions,
         data_types=(DataType.face_images,),
-        methods=FaceForensicsDataStructure.ALL_METHODS,
+        methods=methods,
     )
 
     for full_images, bounding_boxes, face_images in zip(

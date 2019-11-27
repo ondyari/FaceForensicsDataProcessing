@@ -1,8 +1,8 @@
 import json
 import logging
 import math
+from json import JSONDecodeError
 from pathlib import Path
-from pprint import pprint
 from typing import Union
 
 import click
@@ -128,7 +128,11 @@ def _filter_face_information(face_information: Path, masks: Union[Path, None], o
     resulting_face_locations = {}
 
     with open(str(face_information), "r") as f:
-        face_information_json = json.load(f)
+        try:
+            face_information_json = json.load(f)
+        except JSONDecodeError:
+            logger.error(f"Could not read json: {face_information}")
+            return
 
     if masks:
         if face_information.suffix != masks.suffix:
@@ -271,7 +275,7 @@ def _filter_face_information(face_information: Path, masks: Union[Path, None], o
     "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.ALL_METHODS
 )
 @click.option("--compression", "-c", default=Compression.c40)
-def extract_bounding_box_from_masks(source_dir_root, methods, compression):
+def aggregate_masks_and_face_locations(source_dir_root, methods, compression):
 
     face_information_data_structure = FaceForensicsDataStructure(
         source_dir_root,
@@ -336,4 +340,4 @@ def extract_bounding_box_from_masks(source_dir_root, methods, compression):
 
 
 if __name__ == "__main__":
-    extract_bounding_box_from_masks()
+    aggregate_masks_and_face_locations()
