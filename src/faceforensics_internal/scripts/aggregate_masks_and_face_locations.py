@@ -1,8 +1,8 @@
 import json
 import logging
 import math
+from json import JSONDecodeError
 from pathlib import Path
-from pprint import pprint
 from typing import Union
 
 import click
@@ -111,12 +111,28 @@ def face_location_to_center(face_location):
     return x + int(0.5 * w), y + int(0.5 * h)
 
 
+def trbl_to_xywh(face_location_trbl):
+
+    top, right, bottom, left = face_location_trbl
+
+    x = left
+    y = top
+    w = right - x
+    h = bottom - y
+
+    return [x, y, w, h]
+
+
 def _filter_face_information(face_information: Path, masks: Union[Path, None], output):
     last_location = None
     resulting_face_locations = {}
 
     with open(str(face_information), "r") as f:
-        face_information_json = json.load(f)
+        try:
+            face_information_json = json.load(f)
+        except JSONDecodeError:
+            logger.error(f"Could not read json: {face_information}")
+            return
 
     if masks:
         if face_information.suffix != masks.suffix:
@@ -145,6 +161,8 @@ def _filter_face_information(face_information: Path, masks: Union[Path, None], o
                 resulting_face_locations[frame] = last_location
                 continue
 
+            locations = map(trbl_to_xywh, locations)
+
             if not last_location:
                 locations = sorted(locations, reverse=True, key=_largest_face_location)
                 mask_bounding_box = masks_json[frame]
@@ -153,7 +171,7 @@ def _filter_face_information(face_information: Path, masks: Union[Path, None], o
                     resulting_face_locations[frame] = last_location
                     continue
                 else:
-                    mask_bounding_box = mask_bounding_box[0]
+                    mask_bounding_box = trbl_to_xywh(mask_bounding_box[0])
 
                 iou = get_iou(mask_bounding_box, locations[0])
 
@@ -187,7 +205,7 @@ def _filter_face_information(face_information: Path, masks: Union[Path, None], o
                     resulting_face_locations[frame] = None
                     continue
             else:
-                mask_bounding_box = mask_bounding_box[0]
+                mask_bounding_box = trbl_to_xywh(mask_bounding_box[0])
 
             iou = get_iou(mask_bounding_box, locations[0])
 
@@ -227,6 +245,8 @@ def _filter_face_information(face_information: Path, masks: Union[Path, None], o
                 resulting_face_locations[frame] = last_location
                 continue
 
+            locations = map(trbl_to_xywh, locations)
+
             if not last_location:
                 locations = sorted(locations, reverse=True, key=_largest_face_location)
                 last_location = locations[0]  # largest face
@@ -255,7 +275,7 @@ def _filter_face_information(face_information: Path, masks: Union[Path, None], o
     "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.ALL_METHODS
 )
 @click.option("--compression", "-c", default=Compression.c40)
-def extract_bounding_box_from_masks(source_dir_root, methods, compression):
+def aggregate_masks_and_face_locations(source_dir_root, methods, compression):
 
     face_information_data_structure = FaceForensicsDataStructure(
         source_dir_root,
@@ -320,4 +340,4 @@ def extract_bounding_box_from_masks(source_dir_root, methods, compression):
 
 
 if __name__ == "__main__":
-    extract_bounding_box_from_masks()
+    aggregate_masks_and_face_locations()
