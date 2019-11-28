@@ -24,10 +24,12 @@ def _calculate_tracking_bounding_box(
     height, width = image_size
 
     bounding_boxes = face_bb.values()
-    x = min([bounding_box[0] for bounding_box in bounding_boxes])
-    y = min([bounding_box[1] for bounding_box in bounding_boxes])
-    w = max([bounding_box[2] for bounding_box in bounding_boxes])
-    h = max([bounding_box[3] for bounding_box in bounding_boxes])
+    left = min([bounding_box[0] for bounding_box in bounding_boxes])
+    top = min([bounding_box[1] for bounding_box in bounding_boxes])
+    right = max([bounding_box[0] + bounding_box[2] for bounding_box in bounding_boxes])
+    bottom = max([bounding_box[1] + bounding_box[3] for bounding_box in bounding_boxes])
+
+    x, y, w, h = left, top, right - left, bottom - top
 
     size_bb = int(max(w, h) * scale)
 
@@ -106,7 +108,7 @@ def _extract_faces_tracked_from_video(
     face_images.mkdir(exist_ok=True)
 
     tracked_bb, relative_bb = _face_bb_to_tracked_bb(
-        face_bb, image_size=_get_image_size(video_folder)
+        face_bb, image_size=_get_image_size(video_folder), scale=1
     )
 
     # extract all faces and save it
