@@ -1,5 +1,6 @@
 import json
 import logging
+import multiprocessing as mp
 from pathlib import Path
 
 import click
@@ -80,7 +81,7 @@ def extract_faces(source_dir_root, compressions, methods):
         face_images.mkdir(exist_ok=True)
 
         # extract faces from videos in parallel
-        Parallel(n_jobs=12)(
+        Parallel(n_jobs=mp.cpu_count())(
             delayed(
                 lambda _video_folder: _extract_faces_from_video(
                     _video_folder, bounding_boxes, face_images

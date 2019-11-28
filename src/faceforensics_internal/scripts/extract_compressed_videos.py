@@ -7,6 +7,7 @@ Author: Andreas Roessler
 Date: 25.01.2019
 """
 import argparse
+import multiprocessing as mp
 import os
 import subprocess
 from os.path import join
@@ -16,8 +17,8 @@ from joblib import delayed
 from joblib import Parallel
 from tqdm import tqdm
 
+from faceforensics_internal.utils import Compression
 from faceforensics_internal.utils import DataType
-
 
 DATASET_PATHS = {
     "original": "original_sequences/youtube",
@@ -28,7 +29,6 @@ DATASET_PATHS = {
     "FaceSwap": "manipulated_sequences/FaceSwap",
     "NeuralTextures": "manipulated_sequences/NeuralTextures",
 }
-COMPRESSION = ["raw", "c0", "c23", "c40"]
 
 
 def extract_frames(data_path, output_path, method="cv2"):
@@ -66,7 +66,7 @@ def extract_method_videos(data_path, dataset, compression):
         data_path, DATASET_PATHS[dataset], compression, DataType.full_images.__str__()
     )
 
-    Parallel(n_jobs=10)(
+    Parallel(n_jobs=mp.cpu_count())(
         delayed(
             lambda _video: extract_frames(
                 join(videos_path, _video), join(images_path, _video.split(".")[0])
@@ -86,7 +86,13 @@ if __name__ == "__main__":
         choices=list(DATASET_PATHS.keys()) + ["all"],
         default="all",
     )
-    p.add_argument("--compression", "-c", type=str, choices=COMPRESSION, default="raw")
+    p.add_argument(
+        "--compression",
+        "-c",
+        type=Compression.argparse,
+        choices=Compression,
+        default=Compression.raw,
+    )
     args = p.parse_args()
 
     if args.dataset == "all":
