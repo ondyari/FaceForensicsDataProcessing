@@ -51,8 +51,9 @@ def extract_face_locations_from_video(video_path: Path, target_sub_dir: Path):
 @click.option(
     "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.ALL_METHODS
 )
+@click.option("--cpu_count", required=False, type=click.INT, default=mp.cpu_count())
 def extract_face_locations_from_videos(
-    source_dir_root, target_dir_root, compressions, methods
+    source_dir_root, target_dir_root, compressions, methods, cpu_count
 ):
     target_dir_root = Path(target_dir_root)
     target_dir_root.mkdir(parents=True, exist_ok=True)
@@ -86,7 +87,7 @@ def extract_face_locations_from_videos(
         print(f"Processing {source_sub_dir.parts[-2]}, {source_sub_dir.parts[-3]}")
 
         # extract for each folder (-> video) the face information
-        Parallel(n_jobs=mp.cpu_count())(
+        Parallel(n_jobs=cpu_count)(
             delayed(
                 lambda _video_path: extract_face_locations_from_video(
                     _video_path, target_sub_dir
