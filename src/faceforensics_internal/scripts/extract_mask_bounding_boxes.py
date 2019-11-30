@@ -50,7 +50,8 @@ def extract_bounding_boxes_from_video(video_path: Path, target_sub_dir: Path):
 @click.option(
     "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.ALL_METHODS
 )
-def extract_bounding_box_from_masks(source_dir_root, methods):
+@click.option("--cpu_count", required=False, type=click.INT, default=mp.cpu_count())
+def extract_bounding_box_from_masks(source_dir_root, methods, cpu_count):
 
     # use FaceForensicsDataStructure to iterate over the correct image folders
     source_dir_data_structure = FaceForensicsDataStructure(
@@ -83,7 +84,7 @@ def extract_bounding_box_from_masks(source_dir_root, methods):
         )
 
         # compute mask bounding box for each folder
-        Parallel(n_jobs=mp.cpu_count())(
+        Parallel(n_jobs=cpu_count)(
             delayed(
                 lambda _video_path: extract_bounding_boxes_from_video(
                     _video_path, target_sub_dir
