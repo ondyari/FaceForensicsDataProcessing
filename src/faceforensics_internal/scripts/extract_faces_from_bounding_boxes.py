@@ -49,7 +49,8 @@ def _extract_faces_from_video(
 @click.option(
     "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.ALL_METHODS
 )
-def extract_faces(source_dir_root, compressions, methods):
+@click.option("--cpu_count", required=False, type=click.INT, default=mp.cpu_count())
+def extract_faces(source_dir_root, compressions, methods, cpu_count):
     full_images_data_structure = FaceForensicsDataStructure(
         source_dir_root,
         compressions=compressions,
@@ -81,7 +82,7 @@ def extract_faces(source_dir_root, compressions, methods):
         face_images.mkdir(exist_ok=True)
 
         # extract faces from videos in parallel
-        Parallel(n_jobs=mp.cpu_count())(
+        Parallel(n_jobs=cpu_count)(
             delayed(
                 lambda _video_folder: _extract_faces_from_video(
                     _video_folder, bounding_boxes, face_images
