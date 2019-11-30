@@ -79,6 +79,12 @@ class FaceForensicsDataStructure:
     }
 
     ALL_METHODS = list(METHODS.keys())
+    ALL_MANIPULATED_METHODS = [
+        DEEPFAKES.name,
+        FACE2FACE.name,
+        FACE_SWAP.name,
+        NEURAL_TEXTURES.name,
+    ]
 
     def __init__(
         self,
