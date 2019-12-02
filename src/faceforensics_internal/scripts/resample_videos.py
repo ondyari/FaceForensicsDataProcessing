@@ -18,7 +18,7 @@ logger = logging.getLogger(__file__)
 def _resampled_video(video: Path, resampled_video_folder: Path):
     try:
         subprocess.check_output(
-            f"/home/sebastian/bin/ffmpeg -i {video} -c:v h264 -crf 0 -c:a aac "
+            f"/home/sebastian/bin/ffmpeg -i {video} -c:v libx264rgb -crf 0 -c:a aac "
             f"-filter:v fps=fps=25 {resampled_video_folder/video.name}",
             stderr=subprocess.STDOUT,
             shell=True,
