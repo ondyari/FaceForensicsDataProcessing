@@ -46,18 +46,14 @@ def extract_face_locations_from_video(video_path: Path, target_sub_dir: Path):
 
 @click.command()
 @click.option("--source_dir_root", required=True, type=click.Path(exists=True))
-@click.option("--target_dir_root", required=True, type=click.Path(exists=False))
 @click.option("--compressions", "-c", multiple=True, default=[Compression.c40])
 @click.option(
     "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.ALL_METHODS
 )
 @click.option("--cpu_count", required=False, type=click.INT, default=mp.cpu_count())
 def extract_face_locations_from_videos(
-    source_dir_root, target_dir_root, compressions, methods, cpu_count
+    source_dir_root, compressions, methods, cpu_count
 ):
-    target_dir_root = Path(target_dir_root)
-    target_dir_root.mkdir(parents=True, exist_ok=True)
-
     # use FaceForensicsDataStructure to iterate over the correct image folders
     source_dir_data_structure = FaceForensicsDataStructure(
         source_dir_root,
@@ -69,7 +65,7 @@ def extract_face_locations_from_videos(
     # this will be used to iterate the same way as the source dir
     # -> create same data structure again
     target_dir_data_structure = FaceForensicsDataStructure(
-        target_dir_root,
+        source_dir_root,
         methods=methods,
         compressions=compressions,
         data_types=(DataType.bounding_boxes,),
