@@ -38,6 +38,7 @@ class DataType(StrEnum):
     full_images = auto()
     face_information = auto()
     videos = auto()
+    resampled_videos = auto()
 
 
 class Method:
