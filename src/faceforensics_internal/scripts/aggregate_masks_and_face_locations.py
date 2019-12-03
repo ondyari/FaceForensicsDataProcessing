@@ -275,7 +275,10 @@ def _filter_face_information(face_information: Path, masks: Union[Path, None], o
     "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.ALL_METHODS
 )
 @click.option("--compression", "-c", default=Compression.c40)
-def aggregate_masks_and_face_locations(source_dir_root, methods, compression):
+@click.option("--cpu_count", required=False, type=click.INT, default=mp.cpu_count())
+def aggregate_masks_and_face_locations(
+    source_dir_root, methods, compression, cpu_count
+):
 
     face_information_data_structure = FaceForensicsDataStructure(
         source_dir_root,
@@ -316,7 +319,7 @@ def aggregate_masks_and_face_locations(source_dir_root, methods, compression):
             logging.info("Didn't find any mask data.")
 
             # compute mask bounding box for each folder
-            Parallel(n_jobs=mp.cpu_count())(
+            Parallel(n_jobs=cpu_count)(
                 delayed(
                     lambda _face_information_video: _filter_face_information(
                         _face_information_video, None, bounding_boxes
@@ -327,7 +330,7 @@ def aggregate_masks_and_face_locations(source_dir_root, methods, compression):
 
         else:
             # compute mask bounding box for each folder
-            Parallel(n_jobs=mp.cpu_count())(
+            Parallel(n_jobs=cpu_count)(
                 delayed(
                     lambda _face_information_video, _mask_data_video: _filter_face_information(
                         _face_information_video, _mask_data_video, bounding_boxes
