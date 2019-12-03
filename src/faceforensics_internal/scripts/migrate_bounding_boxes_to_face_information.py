@@ -19,14 +19,24 @@ def migrate_bounding_boxes_to_face_information(source_dir_root, methods):
     source_dir_data_structure = FaceForensicsDataStructure(
         source_dir_root,
         methods=methods,
-        compressions=(Compression.c40, Compression.c23, Compression.raw),
+        compressions=(
+            Compression.c40,
+            Compression.c23,
+            Compression.raw,
+            Compression.masks,
+        ),
         data_types=(DataType.bounding_boxes,),
     )
 
     target_dir_data_structure = FaceForensicsDataStructure(
         source_dir_root,
         methods=methods,
-        compressions=(Compression.c40, Compression.c23, Compression.raw),
+        compressions=(
+            Compression.c40,
+            Compression.c23,
+            Compression.raw,
+            Compression.masks,
+        ),
         data_types=(DataType.face_information,),
     )
 
