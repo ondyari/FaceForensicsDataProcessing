@@ -15,11 +15,11 @@ from faceforensics_internal.utils import FaceForensicsDataStructure
 logger = logging.getLogger(__file__)
 
 
-def _resampled_video(video: Path, resampled_video_folder: Path):
+def _resampled_video(video: Path, resampled_video_folder: Path, fps: float):
     try:
         subprocess.check_output(
             f"/home/sebastian/bin/ffmpeg -i {video} -c:v libx264rgb -crf 0 -c:a aac "
-            f"-filter:v fps=fps=25 {resampled_video_folder/video.name}",
+            f"-filter:v fps=fps={fps} {resampled_video_folder/video.name}",
             stderr=subprocess.STDOUT,
             shell=True,
         )
@@ -34,7 +34,8 @@ def _resampled_video(video: Path, resampled_video_folder: Path):
 @click.option(
     "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.ALL_METHODS
 )
-def resample_videos(source_dir_root, compressions, methods):
+@click.option("--fps", default=25.0)
+def resample_videos(source_dir_root, compressions, methods, fps):
     videos_data_structure = FaceForensicsDataStructure(
         source_dir_root,
         compressions=compressions,
@@ -60,7 +61,9 @@ def resample_videos(source_dir_root, compressions, methods):
         # extract faces from videos in parallel
         Parallel(n_jobs=mp.cpu_count())(
             delayed(
-                lambda _video_folder: _resampled_video(_video_folder, resampled_videos)
+                lambda _video_folder: _resampled_video(
+                    _video_folder, resampled_videos, fps
+                )
             )(video_folder)
             for video_folder in tqdm(sorted(videos.iterdir()))
         )
