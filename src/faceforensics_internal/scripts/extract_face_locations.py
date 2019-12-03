@@ -68,7 +68,7 @@ def extract_face_locations_from_videos(
         source_dir_root,
         methods=methods,
         compressions=compressions,
-        data_types=(DataType.bounding_boxes,),
+        data_types=(DataType.face_information,),
     )
 
     # zip source and target structure to iterate over both simultaneously
