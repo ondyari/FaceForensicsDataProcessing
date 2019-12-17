@@ -4,6 +4,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Iterable
 from typing import List
+from typing import Tuple
 from typing import Union
 
 import numpy as np
@@ -77,6 +78,8 @@ class FaceForensicsDataStructure:
         FACE2FACE.name: FACE2FACE,
         FACE_SWAP.name: FACE_SWAP,
         NEURAL_TEXTURES.name: NEURAL_TEXTURES,
+        ACTORS.name: ACTORS,
+        DEEP_FAKE_DETECTION.name: DEEP_FAKE_DETECTION,
     }
 
     ALL_METHODS = list(METHODS.keys())
@@ -85,18 +88,22 @@ class FaceForensicsDataStructure:
         self,
         root_dir: str,
         methods: Iterable[str],
-        compressions: Iterable[Union[str, Compression]] = (Compression.raw,),
-        data_types: Iterable[Union[str, DataType]] = (DataType.face_images,),
+        compressions: Iterable[Union[str, Compression]] = Compression.raw,
+        data_types: Iterable[Union[str, DataType]] = DataType.face_images,
     ):
         self.root_dir = Path(root_dir)
         if not self.root_dir.exists():
             raise FileNotFoundError(f"{self.root_dir} does not exist!")
         self.methods = [self.METHODS[method] for method in methods]
-        self.data_types = data_types
-        self.compressions = compressions
+        self.data_types = (
+            data_types if isinstance(data_types, (List, Tuple)) else (data_types,)
+        )
+        self.compressions = (
+            compressions if isinstance(compressions, (List, Tuple)) else (compressions,)
+        )
 
     def get_subdirs(self) -> List[Path]:
-
+        """Returns subdirectories containing datatype """
         return [
             self.root_dir / method.get_dir_str() / str(compression) / str(data_type)
             for method, compression, data_type in itertools.product(

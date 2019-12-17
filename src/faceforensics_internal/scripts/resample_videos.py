@@ -1,11 +1,9 @@
 import logging
 import multiprocessing as mp
+import os
 import subprocess
-from pathlib import Path
 
 import click
-from joblib import delayed
-from joblib import Parallel
 from tqdm import tqdm
 
 from faceforensics_internal.utils import Compression
@@ -15,12 +13,14 @@ from faceforensics_internal.utils import FaceForensicsDataStructure
 logger = logging.getLogger(__file__)
 
 
-def _resampled_video(video: Path, resampled_video_folder: Path, fps: float):
+def _resampled_video(args):
+    video, resampled_video_folder, fps = args
     try:
-        subprocess.check_output(
+        subprocess.check_call(
             f"/home/sebastian/bin/ffmpeg -i {video} -c:v libx264rgb -crf 0 -c:a aac "
-            f"-filter:v fps=fps={fps} {resampled_video_folder/video.name}",
-            stderr=subprocess.STDOUT,
+            f"-filter:v fps=fps={fps} {resampled_video_folder/video.name} -y",
+            stdout=open(os.devnull, "wb"),
+            stderr=open(os.devnull, "wb"),
             shell=True,
         )
     except subprocess.CalledProcessError as e:
@@ -30,7 +30,7 @@ def _resampled_video(video: Path, resampled_video_folder: Path, fps: float):
 
 @click.command()
 @click.option("--source_dir_root", required=True, type=click.Path(exists=True))
-@click.option("--compressions", "-c", default=[Compression.c40])
+@click.option("--compressions", "-c", multiple=True, default=[Compression.c40])
 @click.option(
     "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.ALL_METHODS
 )
@@ -58,14 +58,16 @@ def resample_videos(source_dir_root, compressions, methods, fps):
 
         resampled_videos.mkdir(exist_ok=True)
 
-        # extract faces from videos in parallel
-        Parallel(n_jobs=mp.cpu_count())(
-            delayed(
-                lambda _video_folder: _resampled_video(
-                    _video_folder, resampled_videos, fps
-                )
-            )(video_folder)
-            for video_folder in tqdm(sorted(videos.iterdir()))
+        p = mp.Pool(mp.cpu_count())
+
+        p.map(
+            _resampled_video,
+            tqdm(
+                [
+                    (_video_folder, resampled_videos, fps)
+                    for _video_folder in sorted(videos.iterdir())
+                ]
+            ),
         )
 
 
