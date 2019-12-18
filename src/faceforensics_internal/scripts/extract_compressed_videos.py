@@ -22,9 +22,9 @@ from faceforensics_internal.utils import DataType
 
 DATASET_PATHS = {
     "original": "original_sequences/youtube",
-    # "DeepFakeDetection_original": "original_sequences/actors",
+    "DeepFakeDetection_original": "original_sequences/actors",
     "Deepfakes": "manipulated_sequences/Deepfakes",
-    # "DeepFakeDetection": "manipulated_sequences/DeepFakeDetection",
+    "DeepFakeDetection": "manipulated_sequences/DeepFakeDetection",
     "Face2Face": "manipulated_sequences/Face2Face",
     "FaceSwap": "manipulated_sequences/FaceSwap",
     "NeuralTextures": "manipulated_sequences/NeuralTextures",
@@ -60,10 +60,13 @@ def extract_method_videos(data_path, dataset, compression):
     """Extracts all videos of a specified method and compression in the
     FaceForensics++ file structure"""
     videos_path = join(
-        data_path, DATASET_PATHS[dataset], compression, DataType.videos.__str__()
+        data_path, DATASET_PATHS[dataset], str(compression), DataType.videos.__str__()
     )
     images_path = join(
-        data_path, DATASET_PATHS[dataset], compression, DataType.full_images.__str__()
+        data_path,
+        DATASET_PATHS[dataset],
+        str(compression),
+        DataType.full_images.__str__(),
     )
 
     Parallel(n_jobs=mp.cpu_count())(

@@ -8,6 +8,7 @@ from typing import Tuple
 
 import click
 import cv2
+from cv2.cv2 import VideoCapture
 from joblib import delayed
 from joblib import Parallel
 from tqdm import tqdm
@@ -84,13 +85,16 @@ def _face_bb_to_tracked_bb(
     return tracked_bb, relative_bb
 
 
-def _extract_face(img_path, face, face_images_dir):
+def _extract_face(img, face, face_images_dir, frame_number):
     if not face:
         return False
-    img = cv2.imread(str(img_path))
     x, y, w, h = face
-    cropped_face = img[y : y + h, x : x + w]  # noqa E203
-    cv2.imwrite(str(face_images_dir / img_path.name), cropped_face)
+    try:
+        cropped_face = img[y : y + int(h), x : x + int(w)]  # noqa E203
+    except TypeError:
+        print(face)
+        raise
+    cv2.imwrite(str(face_images_dir / f"{frame_number:04d}.png"), cropped_face)
     return True
 
 
@@ -105,21 +109,35 @@ def _extract_faces_tracked_from_video(
     with open(str((bounding_boxes / video_folder.name).with_suffix(".json")), "r") as f:
         face_bb = json.load(f)
 
-    face_images = face_images / video_folder.name
+    face_images = face_images / video_folder.with_suffix("").name
     face_images.mkdir(exist_ok=True)
 
+    cap = VideoCapture(str(video_folder))
+    width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+    height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
     tracked_bb, relative_bb = _face_bb_to_tracked_bb(
-        face_bb, image_size=_get_image_size(video_folder), scale=1
+        face_bb, image_size=(height, width), scale=1
     )
 
     # extract all faces and save it
-    for img in sorted(video_folder.iterdir()):
-        face = tracked_bb[img.with_suffix("").name]
-        _extract_face(img, face, face_images)
+    frame_num = 0
+    while cap.isOpened():
+        success, image = cap.read()
+        if not success:
+            break
+
+        face = tracked_bb[f"{frame_num:04d}"]
+        _extract_face(image, face, face_images, frame_num)
+
+        frame_num += 1
+    cap.release()
 
     # save relative face positions as well
     with open(face_images / "relative_bb.json", "w") as f:
         json.dump(relative_bb, f)
+
+    with open(face_images / "tracked_bb.json", "w") as f:
+        json.dump(tracked_bb, f)
 
     return True
 
@@ -131,10 +149,10 @@ def _extract_faces_tracked_from_video(
     "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.ALL_METHODS
 )
 def extract_faces_tracked(source_dir_root, compressions, methods):
-    full_images_data_structure = FaceForensicsDataStructure(
+    videos_data_structure = FaceForensicsDataStructure(
         source_dir_root,
         compressions=compressions,
-        data_types=(DataType.full_images,),
+        data_types=(DataType.videos,),
         methods=methods,
     )
 
@@ -152,12 +170,12 @@ def extract_faces_tracked(source_dir_root, compressions, methods):
         methods=methods,
     )
 
-    for full_images, bounding_boxes, face_images in zip(
-        full_images_data_structure.get_subdirs(),
+    for videos, bounding_boxes, face_images in zip(
+        videos_data_structure.get_subdirs(),
         bounding_boxes_dir_data_structure.get_subdirs(),
         face_images_tracked_dir_data_structure.get_subdirs(),
     ):
-        logger.info(f"Current method: {full_images.parents[1].name}")
+        logger.info(f"Current method: {videos.parents[1].name}")
 
         face_images.mkdir(exist_ok=True)
 
@@ -168,7 +186,7 @@ def extract_faces_tracked(source_dir_root, compressions, methods):
                     _video_folder, bounding_boxes, face_images
                 )
             )(video_folder)
-            for video_folder in tqdm(sorted(full_images.iterdir()))
+            for video_folder in tqdm(sorted(videos.iterdir()))
         )
 
 
