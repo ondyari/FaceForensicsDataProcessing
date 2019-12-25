@@ -148,7 +148,7 @@ def _create_file_list(
 @click.option(
     "--data_types", "-d", multiple=True, default=[DataType.face_images_tracked]
 )
-@click.option("--samples_per_video_train", default=100)
+@click.option("--samples_per_video_train", default=270)
 @click.option("--samples_per_video_val", default=20)
 @click.option(
     "--min_sequence_length",
@@ -169,9 +169,11 @@ def create_file_list(
 ):
 
     output_file = (
-        "_".join(methods)
+        "_".join([str(method) for method in methods])
         + "_"
-        + "_".join(compressions)
+        + "_".join([str(compression) for compression in compressions])
+        + "_"
+        + "_".join([str(data_type) for data_type in data_types])
         + "_"
         + str(samples_per_video_train)
         + "_"
@@ -182,20 +184,20 @@ def create_file_list(
     )
     output_file = Path(output_dir) / output_file
 
-    # try:
-    #     # if file exists, we don't have to create it again
-    #     file_list = FileList.load(output_file)
-    # except FileNotFoundError:
-    file_list = _create_file_list(
-        methods,
-        compressions,
-        data_types,
-        min_sequence_length,
-        output_file,
-        samples_per_video_train,
-        samples_per_video_val,
-        source_dir_root,
-    )
+    try:
+        # if file exists, we don't have to create it again
+        file_list = FileList.load(output_file)
+    except FileNotFoundError:
+        file_list = _create_file_list(
+            methods,
+            compressions,
+            data_types,
+            min_sequence_length,
+            output_file,
+            samples_per_video_train,
+            samples_per_video_val,
+            source_dir_root,
+        )
 
     if target_dir_root:
         file_list.copy_to(Path(target_dir_root))
