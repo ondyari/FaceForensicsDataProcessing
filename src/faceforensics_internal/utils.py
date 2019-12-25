@@ -29,6 +29,7 @@ class Compression(StrEnum):
     raw = auto()
     c23 = auto()
     c40 = auto()
+    random_compressed = auto()
     masks = auto()
 
 
@@ -83,7 +84,16 @@ class FaceForensicsDataStructure:
     }
 
     ALL_METHODS = list(METHODS.keys())
-    ALL_MANIPULATED_METHODS = [
+
+    MANIPULATED_METHODS = [
+        DEEPFAKES.name,
+        FACE2FACE.name,
+        FACE_SWAP.name,
+        NEURAL_TEXTURES.name,
+    ]
+
+    FF_METHODS = [
+        YOUTUBE.name,
         DEEPFAKES.name,
         FACE2FACE.name,
         FACE_SWAP.name,
