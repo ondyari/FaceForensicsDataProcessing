@@ -78,7 +78,7 @@ def _create_file_list(
         or _min_sequence_length < samples_per_video_val
     ):
         logger.warning(
-            f"There is a sequence that is sequence that has less frames "
+            f"There is a sequence that has less frames "
             f"then you would like to sample: {_min_sequence_length}"
         )
 
@@ -93,7 +93,11 @@ def _create_file_list(
 
                     # find all frames that have at least min_sequence_length-1 preceeding
                     # frames
-                    sequence_start = _img_name_to_int(images[0])
+                    try:
+                        sequence_start = _img_name_to_int(images[0])
+                    except IndexError:
+                        logger.warning(f"IndexError: {video_folder}")
+
                     last_idx = sequence_start
                     for list_idx, image in enumerate(images):
                         image_idx = _img_name_to_int(image)
@@ -136,7 +140,7 @@ def _create_file_list(
     default=None,
     help="If specified, all files in the filelist are copied over to this location",
 )
-@click.option("--output_file", required=True, type=click.Path())
+@click.option("--output_dir", required=True, type=click.Path())
 @click.option(
     "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.FF_METHODS
 )
@@ -155,7 +159,7 @@ def _create_file_list(
 def create_file_list(
     source_dir_root,
     target_dir_root,
-    output_file,
+    output_dir,
     methods,
     compressions,
     data_types,
@@ -163,6 +167,20 @@ def create_file_list(
     samples_per_video_val,
     min_sequence_length,
 ):
+
+    output_file = (
+        "_".join(methods)
+        + "_"
+        + "_".join(compressions)
+        + "_"
+        + str(samples_per_video_train)
+        + "_"
+        + str(samples_per_video_val)
+        + "_"
+        + str(min_sequence_length)
+        + ".json"
+    )
+    output_file = Path(output_dir) / output_file
 
     # try:
     #     # if file exists, we don't have to create it again
