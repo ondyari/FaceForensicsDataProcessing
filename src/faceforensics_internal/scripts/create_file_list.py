@@ -86,7 +86,7 @@ def _create_file_list(
         for source_sub_dir, target in zip(
             source_dir_data_structure.get_subdirs(), file_list.classes
         ):
-            for video_folder in sorted(source_sub_dir.iterdir()):
+            for video_folder in sorted(source_sub_dir.iterdir())[:10]:
                 if video_folder.name.split("_")[0] in split:
 
                     images = sorted(video_folder.glob("*.png"))
@@ -112,7 +112,7 @@ def _create_file_list(
                         if split_name == TRAIN_NAME
                         else samples_per_video_val
                         if split_name == VAL_NAME
-                        else -1,
+                        else 3,
                     )
 
                     sampled_images_idx = np.asarray(filtered_images_idx)[
@@ -141,12 +141,22 @@ def _create_file_list(
 @click.option(
     "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.FF_METHODS
 )
-@click.option("--compressions", "-c", multiple=True, default=[Compression.c40])
+@click.option(
+    "--compressions",
+    "-c",
+    multiple=True,
+    default=[
+        Compression.raw,
+        Compression.c23,
+        Compression.c40,
+        Compression.random_compressed,
+    ],
+)
 @click.option(
     "--data_types", "-d", multiple=True, default=[DataType.face_images_tracked]
 )
-@click.option("--samples_per_video_train", "-s", default=100)
-@click.option("--samples_per_video_val", "-s", default=20)
+@click.option("--samples_per_video_train", default=3)
+@click.option("--samples_per_video_val", default=3)
 @click.option(
     "--min_sequence_length",
     default=1,
