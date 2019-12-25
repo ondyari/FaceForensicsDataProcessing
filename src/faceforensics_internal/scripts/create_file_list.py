@@ -56,7 +56,8 @@ def _create_file_list(
     data_types,
     min_sequence_length,
     output_file,
-    samples_per_video,
+    samples_per_video_train,
+    samples_per_video_val,
     source_dir_root,
 ):
     file_list = FileList(
@@ -72,11 +73,13 @@ def _create_file_list(
     )
 
     _min_sequence_length = _get_min_sequence_length(source_dir_data_structure)
-    if _min_sequence_length < samples_per_video:
+    if (
+        _min_sequence_length < samples_per_video_train
+        or _min_sequence_length < samples_per_video_val
+    ):
         logger.warning(
             f"There is a sequence that is sequence that has less frames "
-            f"then you would like to sample: "
-            f"{_min_sequence_length}<{samples_per_video}"
+            f"then you would like to sample: {_min_sequence_length}"
         )
 
     for split, split_name in [(TRAIN, TRAIN_NAME), (VAL, VAL_NAME), (TEST, TEST_NAME)]:
@@ -105,7 +108,11 @@ def _create_file_list(
                     # otherwise distribute uniformly
                     selected_frames = _select_frames(
                         len(filtered_images_idx),
-                        -1 if split_name == TEST_NAME else samples_per_video,
+                        samples_per_video_train
+                        if split_name == TRAIN_NAME
+                        else samples_per_video_val
+                        if split_name == VAL_NAME
+                        else -1,
                     )
 
                     sampled_images_idx = np.asarray(filtered_images_idx)[
@@ -132,20 +139,14 @@ def _create_file_list(
 )
 @click.option("--output_file", required=True, type=click.Path())
 @click.option(
-    "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.ALL_METHODS
+    "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.FF_METHODS
 )
 @click.option("--compressions", "-c", multiple=True, default=[Compression.c40])
 @click.option(
     "--data_types", "-d", multiple=True, default=[DataType.face_images_tracked]
 )
-@click.option(
-    "--samples_per_video",
-    "-s",
-    default=-1,
-    help="Number of frames selected per video. For videos with less frames then this"
-    "number, only these are selected. If samples_per_video is -1 all frames for each"
-    "video is selected.",
-)
+@click.option("--samples_per_video_train", "-s", default=100)
+@click.option("--samples_per_video_val", "-s", default=20)
 @click.option(
     "--min_sequence_length",
     default=1,
@@ -159,23 +160,25 @@ def create_file_list(
     methods,
     compressions,
     data_types,
-    samples_per_video,
+    samples_per_video_train,
+    samples_per_video_val,
     min_sequence_length,
 ):
 
-    try:
-        # if file exists, we don't have to create it again
-        file_list = FileList.load(output_file)
-    except FileNotFoundError:
-        file_list = _create_file_list(
-            methods,
-            compressions,
-            data_types,
-            min_sequence_length,
-            output_file,
-            samples_per_video,
-            source_dir_root,
-        )
+    # try:
+    #     # if file exists, we don't have to create it again
+    #     file_list = FileList.load(output_file)
+    # except FileNotFoundError:
+    file_list = _create_file_list(
+        methods,
+        compressions,
+        data_types,
+        min_sequence_length,
+        output_file,
+        samples_per_video_train,
+        samples_per_video_val,
+        source_dir_root,
+    )
 
     if target_dir_root:
         file_list.copy_to(Path(target_dir_root))
