@@ -93,11 +93,10 @@ def _create_file_list(
 
                     # find all frames that have at least min_sequence_length-1 preceeding
                     # frames
-                    try:
-                        sequence_start = _img_name_to_int(images[0])
-                    except IndexError:
-                        logger.warning(f"IndexError: {video_folder}")
+                    if len(images) == 0:
+                        continue
 
+                    sequence_start = _img_name_to_int(images[0])
                     last_idx = sequence_start
                     for list_idx, image in enumerate(images):
                         image_idx = _img_name_to_int(image)
@@ -109,13 +108,16 @@ def _create_file_list(
 
                     # for the test-set all frames are going to be taken
                     # otherwise distribute uniformly
+
+                    if split_name == TRAIN_NAME:
+                        samples_per_video = samples_per_video_train
+                    elif split_name == VAL_NAME:
+                        samples_per_video = samples_per_video_val
+                    elif split_name == TEST_NAME:
+                        samples_per_video = -1
+
                     selected_frames = _select_frames(
-                        len(filtered_images_idx),
-                        samples_per_video_train
-                        if split_name == TRAIN_NAME
-                        else samples_per_video_val
-                        if split_name == VAL_NAME
-                        else -1,
+                        len(filtered_images_idx), samples_per_video
                     )
 
                     sampled_images_idx = np.asarray(filtered_images_idx)[
@@ -148,8 +150,8 @@ def _create_file_list(
 @click.option(
     "--data_types", "-d", multiple=True, default=[DataType.face_images_tracked]
 )
-@click.option("--samples_per_video_train", default=270)
-@click.option("--samples_per_video_val", default=20)
+@click.option("--samples_per_video_train", default=100)
+@click.option("--samples_per_video_val", default=100)
 @click.option(
     "--min_sequence_length",
     default=1,
