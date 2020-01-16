@@ -189,6 +189,7 @@ def create_file_list(
     try:
         # if file exists, we don't have to create it again
         file_list = FileList.load(output_file)
+        logger.warning("Reusing already created file!")
     except FileNotFoundError:
         file_list = _create_file_list(
             methods,

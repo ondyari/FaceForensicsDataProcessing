@@ -159,7 +159,7 @@ def extract_faces_tracked(source_dir_root, compressions, methods):
     bounding_boxes_dir_data_structure = FaceForensicsDataStructure(
         source_dir_root,
         compressions=compressions,
-        data_types=(DataType.bounding_boxes,),
+        data_types=(DataType.face_information,),
         methods=methods,
     )
 
