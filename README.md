@@ -1,15 +1,11 @@
-# FaceForensics Internal Git
+# FaceForensics Data Processing
 
-## Goals
-
-- Provide an introduction of all data preprocessing and dataloaders for the FaceForensics image dataset that are sharable between multiple projects
-- Publish some of those methods on the official FaceForensics github (Andreas will cite all collaborators)
+This repository provides an introduction of all data preprocessing and dataloaders for the FaceForensics image dataset that are sharable between multiple projects
 
 ## Setup
 
  - Poetry: https://github.com/sdispater/poetry (`curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python`): poetry install
  - pre-commit: https://pre-commit.com/ (`pip install pre-commit`): Use before committing
-
 
 ## Usage
 
