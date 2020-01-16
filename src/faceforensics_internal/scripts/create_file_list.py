@@ -56,7 +56,8 @@ def _create_file_list(
     data_types,
     min_sequence_length,
     output_file,
-    samples_per_video,
+    samples_per_video_train,
+    samples_per_video_val,
     source_dir_root,
 ):
     file_list = FileList(
@@ -72,17 +73,18 @@ def _create_file_list(
     )
 
     _min_sequence_length = _get_min_sequence_length(source_dir_data_structure)
-    if _min_sequence_length < samples_per_video:
+    if (
+        _min_sequence_length < samples_per_video_train
+        or _min_sequence_length < samples_per_video_val
+    ):
         logger.warning(
-            f"There is a sequence that is sequence that has less frames "
-            f"then you would like to sample: "
-            f"{_min_sequence_length}<{samples_per_video}"
+            f"There is a sequence that has less frames "
+            f"then you would like to sample: {_min_sequence_length}"
         )
 
     for split, split_name in [(TRAIN, TRAIN_NAME), (VAL, VAL_NAME), (TEST, TEST_NAME)]:
-        for source_sub_dir, target in zip(
-            source_dir_data_structure.get_subdirs(), file_list.classes
-        ):
+        for source_sub_dir in source_dir_data_structure.get_subdirs():
+            target = source_sub_dir.parts[-3]
             for video_folder in sorted(source_sub_dir.iterdir()):
                 if video_folder.name.split("_")[0] in split:
 
@@ -91,6 +93,9 @@ def _create_file_list(
 
                     # find all frames that have at least min_sequence_length-1 preceeding
                     # frames
+                    if len(images) == 0:
+                        continue
+
                     sequence_start = _img_name_to_int(images[0])
                     last_idx = sequence_start
                     for list_idx, image in enumerate(images):
@@ -103,9 +108,16 @@ def _create_file_list(
 
                     # for the test-set all frames are going to be taken
                     # otherwise distribute uniformly
+
+                    if split_name == TRAIN_NAME:
+                        samples_per_video = samples_per_video_train
+                    elif split_name == VAL_NAME:
+                        samples_per_video = samples_per_video_val
+                    elif split_name == TEST_NAME:
+                        samples_per_video = -1
+
                     selected_frames = _select_frames(
-                        len(filtered_images_idx),
-                        -1 if split_name == TEST_NAME else samples_per_video,
+                        len(filtered_images_idx), samples_per_video
                     )
 
                     sampled_images_idx = np.asarray(filtered_images_idx)[
@@ -130,22 +142,16 @@ def _create_file_list(
     default=None,
     help="If specified, all files in the filelist are copied over to this location",
 )
-@click.option("--output_file", required=True, type=click.Path())
+@click.option("--output_dir", required=True, type=click.Path())
 @click.option(
-    "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.ALL_METHODS
+    "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.FF_METHODS
 )
 @click.option("--compressions", "-c", multiple=True, default=[Compression.c40])
 @click.option(
     "--data_types", "-d", multiple=True, default=[DataType.face_images_tracked]
 )
-@click.option(
-    "--samples_per_video",
-    "-s",
-    default=-1,
-    help="Number of frames selected per video. For videos with less frames then this"
-    "number, only these are selected. If samples_per_video is -1 all frames for each"
-    "video is selected.",
-)
+@click.option("--samples_per_video_train", default=100)
+@click.option("--samples_per_video_val", default=100)
 @click.option(
     "--min_sequence_length",
     default=1,
@@ -155,13 +161,30 @@ def _create_file_list(
 def create_file_list(
     source_dir_root,
     target_dir_root,
-    output_file,
+    output_dir,
     methods,
     compressions,
     data_types,
-    samples_per_video,
+    samples_per_video_train,
+    samples_per_video_val,
     min_sequence_length,
 ):
+
+    output_file = (
+        "_".join([str(method) for method in methods])
+        + "_"
+        + "_".join([str(compression) for compression in compressions])
+        + "_"
+        + "_".join([str(data_type) for data_type in data_types])
+        + "_"
+        + str(samples_per_video_train)
+        + "_"
+        + str(samples_per_video_val)
+        + "_"
+        + str(min_sequence_length)
+        + ".json"
+    )
+    output_file = Path(output_dir) / output_file
 
     try:
         # if file exists, we don't have to create it again
@@ -173,7 +196,8 @@ def create_file_list(
             data_types,
             min_sequence_length,
             output_file,
-            samples_per_video,
+            samples_per_video_train,
+            samples_per_video_val,
             source_dir_root,
         )
 

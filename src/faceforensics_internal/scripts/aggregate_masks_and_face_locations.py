@@ -272,7 +272,7 @@ def _filter_face_information(face_information: Path, masks: Union[Path, None], o
 @click.command()
 @click.option("--source_dir_root", required=True, type=click.Path(exists=True))
 @click.option(
-    "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.ALL_METHODS
+    "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.FF_METHODS
 )
 @click.option("--compression", "-c", default=Compression.c40)
 @click.option("--cpu_count", required=False, type=click.INT, default=mp.cpu_count())
@@ -332,7 +332,7 @@ def aggregate_masks_and_face_locations(
             # compute mask bounding box for each folder
             Parallel(n_jobs=cpu_count)(
                 delayed(
-                    lambda _face_information_video, _mask_data_video: _filter_face_information(
+                    lambda _face_information_video, _mask_data_video: _filter_face_information(  # noqa: E501
                         _face_information_video, _mask_data_video, bounding_boxes
                     )
                 )(face_information_video, mask_data_video)
