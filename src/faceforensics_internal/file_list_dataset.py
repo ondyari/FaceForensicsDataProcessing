@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 from pathlib import Path
@@ -25,10 +26,20 @@ class FileList:
         self.class_to_idx = {cls: idx for idx, cls in enumerate(self.classes)}
 
         self.samples_face_images = {TRAIN_NAME: [], VAL_NAME: [], TEST_NAME: []}
-        self.samples_flow_images = {TRAIN_NAME: [], VAL_NAME: [], TEST_NAME: []}
         self.samples_idx = {TRAIN_NAME: [], VAL_NAME: [], TEST_NAME: []}
 
         self.min_sequence_length = min_sequence_length
+
+    def binarize(self):
+        authentic = self.classes[0]
+        fake = "_".join(self.classes[1:])
+        self.classes = [authentic, fake]
+        self.class_to_idx = {authentic: 0, fake: 1}
+
+        for data_points in self.samples.values():
+            for datapoint in data_points:
+                binary_label = 0 if datapoint[1] == 0 else 1
+                datapoint[1] = binary_label
 
     def add_face_image_data_point(
         self, path_face_image: Path, target_label: str, split: str
@@ -40,20 +51,9 @@ class FileList:
             )
         )
 
-    def add_flow_image_data_point(
-        self, path_flow_image: Path, target_label: str, split: str
-    ):
-        self.samples_flow_images[split].append(
-            (
-                str(path_flow_image.relative_to(self.root)),
-                self.class_to_idx[target_label],
-            )
-        )
-
     def add_data_points(
         self,
         paths_face_images: List[Path],
-        paths_flow_images: List[Path],
         target_label: str,
         split: str,
         sampled_images_idx: np.array,
@@ -65,13 +65,10 @@ class FileList:
         for path_face_image in paths_face_images:
             self.add_face_image_data_point(path_face_image, target_label, split)
 
-        for path_flow_image in paths_flow_images:
-            self.add_flow_image_data_point(path_flow_image, target_label, split)
-
     def save(self, path):
         """Save self.__dict__ as json."""
         with open(path, "w") as f:
-            json.dump(self.__dict__, f)  # carefull with self.root->Path
+            json.dump(self.__dict__, f)  # be careful with self.root->Path
 
     @classmethod
     def load(cls, path):
@@ -90,15 +87,7 @@ class FileList:
                 f"does not exist might raise an error in the FileListDataset."
             )
         transform = transform or []
-        transform = transforms.Compose(
-            transform
-            + [
-                transforms.ToTensor(),
-                transforms.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),
-            ]
-        )
+        transform = transforms.Compose(transform)
         return FileListDataset(
             file_list=self,
             split=split,
@@ -139,30 +128,25 @@ class FileListDataset(VisionDataset):
         self.classes = file_list.classes
         self.class_to_idx = file_list.class_to_idx
         self._samples_face_images = file_list.samples_face_images[split]
-        self._samples_flow_images = file_list.samples_flow_images[split]
         self.samples_idx = file_list.samples_idx[split]
         self.targets = [s[1] for s in self._samples_face_images]
         self.sequence_length = sequence_length
 
     def __getitem__(self, index):
-        """
-        Args:
-            index (int): Index
-
-        Returns:
-            tuple: (sample, target) where target is class_index of the target class.
-        """
-        try:
-            index = self.samples_idx[index]
-        except IndexError:
-            logger.error(f"{index} is out of range {len(self.samples_idx)}")
+        index = self.samples_idx[index]
         samples_face_images = self._samples_face_images[
             index - self.sequence_length + 1 : index + 1  # noqa: 203
         ]
-        samples_flow_images = self._samples_flow_images[
-            index - self.sequence_length + 1 : index + 1  # noqa: 203
-        ]
+
+        samples_flow_images = copy.deepcopy(samples_face_images)
+        for sample_flow_image in samples_flow_images:
+            sample_flow_image[0] = sample_flow_image[0].replace(
+                "face_images_tracked", "flow_images"
+            )
+
         target = samples_face_images[0][1]
+        path = samples_face_images[0][0]
+
         samples_face_images = [
             self.loader(f"{self.root}/{sample[0]}") for sample in samples_face_images
         ]
@@ -171,16 +155,18 @@ class FileListDataset(VisionDataset):
         ]
 
         if self.transform is not None:
-            samples_face_images = list(map(self.transform, samples_face_images))
-            samples_flow_images = list(map(self.transform, samples_flow_images))
+            samples_face_images = self.transform(samples_face_images)
+            samples_flow_images = self.transform(samples_flow_images)
 
-        samples = samples_face_images + samples_flow_images
-        samples = torch.stack(samples, dim=0)
+        samples = torch.cat([samples_face_images, samples_flow_images], dim=1)
 
         if self.target_transform is not None:
             target = self.target_transform(target)
 
-        return samples, target
+        path_parts = Path(path).parts
+        video_name = "_".join([path_parts[1], path_parts[2], path_parts[4]])
+
+        return samples, target, video_name
 
     def __len__(self):
         return len(self.samples_idx)
