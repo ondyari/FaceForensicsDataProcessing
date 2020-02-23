@@ -28,7 +28,6 @@ def extract_face_locations_from_video(video_path: Path, target_sub_dir: Path):
     frame_count = -1
     while video_capture.isOpened():
         frame_count += 1
-
         # Read next frame
         ret, frame = video_capture.read()
 

@@ -6,8 +6,8 @@ import click
 import numpy as np
 
 from faceforensics_internal.file_list_dataset import FileList
-from faceforensics_internal.splits import TEST
-from faceforensics_internal.splits import TEST_NAME
+from faceforensics_internal.splits import TEST_AIF
+from faceforensics_internal.splits import TEST_NAME_AIF
 from faceforensics_internal.splits import TRAIN
 from faceforensics_internal.splits import TRAIN_NAME
 from faceforensics_internal.splits import VAL
@@ -26,7 +26,10 @@ def _get_min_sequence_length(source_dir_data_structure):
     for source_sub_dir in source_dir_data_structure.get_subdirs():
         for video_folder in sorted(source_sub_dir.iterdir()):
             number_of_frames = len(list(video_folder.glob("*.png")))
-            if min_length == -1 or min_length > number_of_frames:
+            if min_length == -1 or min_length >= number_of_frames:
+                logger.warning(
+                    f"{video_folder.name} has only {number_of_frames} frames!"
+                )
                 min_length = number_of_frames
 
     return min_length
@@ -58,6 +61,7 @@ def _create_file_list(
     output_file,
     samples_per_video_train,
     samples_per_video_val,
+    samples_per_video_test,
     source_dir_root,
 ):
     file_list = FileList(
@@ -76,17 +80,22 @@ def _create_file_list(
     if (
         _min_sequence_length < samples_per_video_train
         or _min_sequence_length < samples_per_video_val
+        or _min_sequence_length < samples_per_video_test
     ):
         logger.warning(
             f"There is a sequence that has less frames "
             f"then you would like to sample: {_min_sequence_length}"
         )
 
-    for split, split_name in [(TRAIN, TRAIN_NAME), (VAL, VAL_NAME), (TEST, TEST_NAME)]:
+    for split, split_name in [
+        (TRAIN, TRAIN_NAME),
+        (VAL, VAL_NAME),
+        (TEST_AIF, TEST_NAME_AIF),
+    ]:
         for source_sub_dir in source_dir_data_structure.get_subdirs():
             target = source_sub_dir.parts[-3]
             for video_folder in sorted(source_sub_dir.iterdir()):
-                if video_folder.name.split("_")[0] in split:
+                if video_folder.stem in split:
 
                     images = sorted(video_folder.glob("*.png"))
                     filtered_images_idx = []
@@ -113,8 +122,8 @@ def _create_file_list(
                         samples_per_video = samples_per_video_train
                     elif split_name == VAL_NAME:
                         samples_per_video = samples_per_video_val
-                    elif split_name == TEST_NAME:
-                        samples_per_video = -1
+                    elif split_name == TEST_NAME_AIF:
+                        samples_per_video = samples_per_video_test
 
                     selected_frames = _select_frames(
                         len(filtered_images_idx), samples_per_video
@@ -150,8 +159,9 @@ def _create_file_list(
 @click.option(
     "--data_types", "-d", multiple=True, default=[DataType.face_images_tracked]
 )
-@click.option("--samples_per_video_train", default=270)
-@click.option("--samples_per_video_val", default=20)
+@click.option("--samples_per_video_train", default=100)
+@click.option("--samples_per_video_val", default=100)
+@click.option("--samples_per_video_test", default=-1)
 @click.option(
     "--min_sequence_length",
     default=1,
@@ -167,6 +177,7 @@ def create_file_list(
     data_types,
     samples_per_video_train,
     samples_per_video_val,
+    samples_per_video_test,
     min_sequence_length,
 ):
 
@@ -181,13 +192,14 @@ def create_file_list(
         + "_"
         + str(samples_per_video_val)
         + "_"
+        + str(samples_per_video_test)
+        + "_"
         + str(min_sequence_length)
         + ".json"
     )
     output_file = Path(output_dir) / output_file
 
     try:
-        # if file exists, we don't have to create it again
         file_list = FileList.load(output_file)
         logger.warning("Reusing already created file!")
     except FileNotFoundError:
@@ -199,6 +211,7 @@ def create_file_list(
             output_file,
             samples_per_video_train,
             samples_per_video_val,
+            samples_per_video_test,
             source_dir_root,
         )
 
@@ -206,7 +219,7 @@ def create_file_list(
         file_list.copy_to(Path(target_dir_root))
         file_list.save(output_file)
 
-    for split in [TRAIN_NAME, VAL_NAME, TEST_NAME]:
+    for split in [TRAIN_NAME, VAL_NAME, TEST_NAME_AIF]:
         data_set = FileList.get_dataset_form_file(output_file, split)
         logger.info(f"{split}-data-set: {data_set}")
 

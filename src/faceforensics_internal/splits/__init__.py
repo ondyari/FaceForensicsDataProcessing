@@ -14,3 +14,7 @@ TRAIN, TRAIN_NAME = (
 )
 VAL, VAL_NAME = flatten(json.load((__current_directory / "val.json").open())), "val"
 TEST, TEST_NAME = flatten(json.load((__current_directory / "test.json").open())), "test"
+TEST_AIF, TEST_NAME_AIF = (
+    flatten(json.load((__current_directory / "test_aif.json").open())),
+    "test",
+)
