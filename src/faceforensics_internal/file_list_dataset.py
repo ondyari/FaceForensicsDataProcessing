@@ -2,7 +2,6 @@ import json
 import logging
 from pathlib import Path
 from pprint import pformat
-from shutil import copy2
 from typing import List
 
 import numpy as np
@@ -11,7 +10,6 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 from torchvision.datasets import VisionDataset
 from torchvision.datasets.folder import default_loader
-from tqdm import tqdm
 
 from faceforensics_internal.splits import TEST_NAME
 from faceforensics_internal.splits import TRAIN_NAME
@@ -26,38 +24,49 @@ class FileList:
         self.classes = classes
         self.class_to_idx = {cls: idx for idx, cls in enumerate(self.classes)}
 
-        self.samples = {TRAIN_NAME: [], VAL_NAME: [], TEST_NAME: []}
+        self.samples_face_images = {TRAIN_NAME: [], VAL_NAME: [], TEST_NAME: []}
+        self.samples_flow_images = {TRAIN_NAME: [], VAL_NAME: [], TEST_NAME: []}
         self.samples_idx = {TRAIN_NAME: [], VAL_NAME: [], TEST_NAME: []}
 
         self.min_sequence_length = min_sequence_length
 
-    def add_data_point(self, path: Path, target_label: str, split: str):
-        """Adds datapoint to samples.
-
-        Args:
-            path: has to be subpath of self.root. Will be saved relative to it.
-            target_label: label of the datapoints. Is converted to idx via
-                self.class_to_idx
-            split: indicates current split (train, val, test)
-
-        """
-        self.samples[split].append(
-            (str(path.relative_to(self.root)), self.class_to_idx[target_label])
+    def add_data_point(
+        self,
+        path_face_image: Path,
+        path_flow_image: Path,
+        target_label: str,
+        split: str,
+    ):
+        self.samples_face_images[split].append(
+            (
+                str(path_face_image.relative_to(self.root)),
+                self.class_to_idx[target_label],
+            )
+        )
+        self.samples_flow_images[split].append(
+            (
+                str(path_flow_image.relative_to(self.root)),
+                self.class_to_idx[target_label],
+            )
         )
 
     def add_data_points(
         self,
-        path_list: List[Path],
+        paths_face_images: List[Path],
+        paths_flow_images: List[Path],
         target_label: str,
         split: str,
         sampled_images_idx: np.array,
     ):
-        nb_samples_offset = len(self.samples[split])
+        nb_samples_offset = len(self.samples_face_images[split])
         sampled_images_idx = (sampled_images_idx + nb_samples_offset).tolist()
         self.samples_idx[split] += sampled_images_idx
 
-        for path in path_list:
-            self.add_data_point(path, target_label, split)
+        for path_face_image in paths_face_images:
+            self.add_data_point(path_face_image, target_label, split)
+
+        for path_flow_image in paths_flow_images:
+            self.add_data_point(path_flow_image, target_label, split)
 
     def save(self, path):
         """Save self.__dict__ as json."""
@@ -72,17 +81,6 @@ class FileList:
         file_list = cls.__new__(cls)
         file_list.__dict__.update(__dict__)
         return file_list
-
-    def copy_to(self, new_root: Path):
-        curr_root = Path(self.root)
-        for data_points in tqdm(self.samples.values(), position=0):
-            for data_point_path, _ in tqdm(data_points, position=1):
-                target_path = new_root / data_point_path
-                target_path.parents[0].mkdir(exist_ok=True, parents=True)
-                copy2(curr_root / data_point_path, target_path)
-
-        self.root = str(new_root)
-        return self
 
     def get_dataset(self, split, transform=None, sequence_length: int = 1) -> Dataset:
         """Get dataset by using this instance."""
@@ -140,9 +138,10 @@ class FileListDataset(VisionDataset):
 
         self.classes = file_list.classes
         self.class_to_idx = file_list.class_to_idx
-        self._samples = file_list.samples[split]
+        self._samples_face_images = file_list.samples_face_images[split]
+        self._samples_flow_images = file_list.samples_flow_images[split]
         self.samples_idx = file_list.samples_idx[split]
-        self.targets = [s[1] for s in self._samples]
+        self.targets = [s[1] for s in self._samples_face_images]
         self.sequence_length = sequence_length
 
     def __getitem__(self, index):
@@ -157,19 +156,26 @@ class FileListDataset(VisionDataset):
             index = self.samples_idx[index]
         except IndexError:
             logger.error(f"{index} is out of range {len(self.samples_idx)}")
-        samples = self._samples[
+        samples_face_images = self._samples_face_images[
             index - self.sequence_length + 1 : index + 1  # noqa: 203
         ]
-        target = samples[0][1]
-        samples = [self.loader(f"{self.root}/{sample[0]}") for sample in samples]
+        samples_flow_images = self._samples_flow_images[
+            index - self.sequence_length + 1 : index + 1  # noqa: 203
+        ]
+        target = samples_face_images[0][1]
+        samples_face_images = [
+            self.loader(f"{self.root}/{sample[0]}") for sample in samples_face_images
+        ]
+        samples_flow_images = [
+            self.loader(f"{self.root}/{sample[0]}") for sample in samples_flow_images
+        ]
 
         if self.transform is not None:
-            samples = list(map(self.transform, samples))
+            samples_face_images = list(map(self.transform, samples_face_images))
+            samples_flow_images = list(map(self.transform, samples_flow_images))
 
-        if self.sequence_length == 1:
-            samples = samples[0]
-        else:
-            samples = torch.stack(samples, dim=0)
+        samples = samples_face_images + samples_flow_images
+        samples = torch.stack(samples, dim=0)
 
         if self.target_transform is not None:
             target = self.target_transform(target)
