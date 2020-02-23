@@ -86,29 +86,39 @@ def _create_file_list(
         for source_sub_dir in source_dir_data_structure.get_subdirs():
             target = source_sub_dir.parts[-3]
             for video_folder in sorted(source_sub_dir.iterdir()):
-                if video_folder.name.split("_")[0] in split:
+                video_name = video_folder.name
+                if video_name.split("_")[0] in split:
 
-                    images = sorted(video_folder.glob("*.png"))
+                    paths_face_images = sorted(video_folder.glob("*.png"))
+                    video_folder_flow_images = (
+                        source_sub_dir.parent / "flow_images" / video_name
+                    )
+                    paths_flow_images = sorted(video_folder_flow_images.glob("*.png"))
+
                     filtered_images_idx = []
 
                     # find all frames that have at least min_sequence_length-1 preceeding
                     # frames
-                    if len(images) == 0:
+                    if len(paths_face_images) == 0:
                         continue
 
-                    sequence_start = _img_name_to_int(images[0])
+                    sequence_start = _img_name_to_int(paths_face_images[0])
                     last_idx = sequence_start
-                    for list_idx, image in enumerate(images):
-                        image_idx = _img_name_to_int(image)
-                        if last_idx + 1 != image_idx:
-                            sequence_start = image_idx
-                        elif image_idx - sequence_start >= min_sequence_length - 1:
-                            filtered_images_idx.append(list_idx)
-                        last_idx = image_idx
+                    for list_idx, path_face_image in enumerate(paths_face_images):
+                        image_idx = _img_name_to_int(path_face_image)
+
+                        image_name = path_face_image.name
+                        path_flow_image = video_folder_flow_images / image_name
+
+                        if path_flow_image.exists():
+                            if last_idx + 1 != image_idx:
+                                sequence_start = image_idx
+                            elif image_idx - sequence_start >= min_sequence_length - 1:
+                                filtered_images_idx.append(list_idx)
+                            last_idx = image_idx
 
                     # for the test-set all frames are going to be taken
                     # otherwise distribute uniformly
-
                     if split_name == TRAIN_NAME:
                         samples_per_video = samples_per_video_train
                     elif split_name == VAL_NAME:
@@ -124,7 +134,8 @@ def _create_file_list(
                         selected_frames
                     ]
                     file_list.add_data_points(
-                        path_list=images,
+                        paths_face_images,
+                        paths_flow_images,
                         target_label=target,
                         split=split_name,
                         sampled_images_idx=sampled_images_idx,
@@ -150,8 +161,8 @@ def _create_file_list(
 @click.option(
     "--data_types", "-d", multiple=True, default=[DataType.face_images_tracked]
 )
-@click.option("--samples_per_video_train", default=100)
-@click.option("--samples_per_video_val", default=100)
+@click.option("--samples_per_video_train", default=270)
+@click.option("--samples_per_video_val", default=20)
 @click.option(
     "--min_sequence_length",
     default=1,
@@ -176,7 +187,7 @@ def create_file_list(
         + "_".join([str(compression) for compression in compressions])
         + "_"
         + "_".join([str(data_type) for data_type in data_types])
-        + "_"
+        + "_flow_images_"
         + str(samples_per_video_train)
         + "_"
         + str(samples_per_video_val)

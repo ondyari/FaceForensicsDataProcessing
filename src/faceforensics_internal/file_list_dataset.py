@@ -30,12 +30,8 @@ class FileList:
 
         self.min_sequence_length = min_sequence_length
 
-    def add_data_point(
-        self,
-        path_face_image: Path,
-        path_flow_image: Path,
-        target_label: str,
-        split: str,
+    def add_face_image_data_point(
+        self, path_face_image: Path, target_label: str, split: str
     ):
         self.samples_face_images[split].append(
             (
@@ -43,6 +39,10 @@ class FileList:
                 self.class_to_idx[target_label],
             )
         )
+
+    def add_flow_image_data_point(
+        self, path_flow_image: Path, target_label: str, split: str
+    ):
         self.samples_flow_images[split].append(
             (
                 str(path_flow_image.relative_to(self.root)),
@@ -63,10 +63,10 @@ class FileList:
         self.samples_idx[split] += sampled_images_idx
 
         for path_face_image in paths_face_images:
-            self.add_data_point(path_face_image, target_label, split)
+            self.add_face_image_data_point(path_face_image, target_label, split)
 
         for path_flow_image in paths_flow_images:
-            self.add_data_point(path_flow_image, target_label, split)
+            self.add_flow_image_data_point(path_flow_image, target_label, split)
 
     def save(self, path):
         """Save self.__dict__ as json."""
