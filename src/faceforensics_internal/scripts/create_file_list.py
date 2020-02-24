@@ -90,10 +90,6 @@ def _create_file_list(
                 if video_name.split("_")[0] in split:
 
                     paths_face_images = sorted(video_folder.glob("*.png"))
-                    video_folder_flow_images = (
-                        source_sub_dir.parent / "flow_images" / video_name
-                    )
-                    paths_flow_images = sorted(video_folder_flow_images.glob("*.png"))
 
                     filtered_images_idx = []
 
@@ -107,10 +103,15 @@ def _create_file_list(
                     for list_idx, path_face_image in enumerate(paths_face_images):
                         image_idx = _img_name_to_int(path_face_image)
 
-                        image_name = path_face_image.name
-                        path_flow_image = video_folder_flow_images / image_name
+                        flow_file_name = path_face_image.with_suffix(".flo").name
+                        path_flow_file = (
+                            source_sub_dir.parent
+                            / "flow_files_112"
+                            / video_name
+                            / flow_file_name
+                        )
 
-                        if path_flow_image.exists():
+                        if path_flow_file.exists():
                             if last_idx + 1 != image_idx:
                                 sequence_start = image_idx
                             elif image_idx - sequence_start >= min_sequence_length - 1:
@@ -135,7 +136,6 @@ def _create_file_list(
                     ]
                     file_list.add_data_points(
                         paths_face_images,
-                        paths_flow_images,
                         target_label=target,
                         split=split_name,
                         sampled_images_idx=sampled_images_idx,
@@ -159,7 +159,7 @@ def _create_file_list(
 )
 @click.option("--compressions", "-c", multiple=True, default=[Compression.c40])
 @click.option(
-    "--data_types", "-d", multiple=True, default=[DataType.face_images_tracked]
+    "--data_types", "-d", multiple=True, default=[DataType.face_images_tracked_112]
 )
 @click.option("--samples_per_video_train", default=270)
 @click.option("--samples_per_video_val", default=20)
@@ -187,7 +187,7 @@ def create_file_list(
         + "_".join([str(compression) for compression in compressions])
         + "_"
         + "_".join([str(data_type) for data_type in data_types])
-        + "_flow_images_"
+        + "_flow_files_"
         + str(samples_per_video_train)
         + "_"
         + str(samples_per_video_val)
@@ -197,21 +197,21 @@ def create_file_list(
     )
     output_file = Path(output_dir) / output_file
 
-    try:
-        # if file exists, we don't have to create it again
-        file_list = FileList.load(output_file)
-        logger.warning("Reusing already created file!")
-    except FileNotFoundError:
-        file_list = _create_file_list(
-            methods,
-            compressions,
-            data_types,
-            min_sequence_length,
-            output_file,
-            samples_per_video_train,
-            samples_per_video_val,
-            source_dir_root,
-        )
+    # try:
+    #     # if file exists, we don't have to create it again
+    #     file_list = FileList.load(output_file)
+    #     logger.warning("Reusing already created file!")
+    # except FileNotFoundError:
+    file_list = _create_file_list(
+        methods,
+        compressions,
+        data_types,
+        min_sequence_length,
+        output_file,
+        samples_per_video_train,
+        samples_per_video_val,
+        source_dir_root,
+    )
 
     if target_dir_root:
         file_list.copy_to(Path(target_dir_root))
