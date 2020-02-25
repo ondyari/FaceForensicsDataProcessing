@@ -186,21 +186,21 @@ def create_file_list(
     )
     output_file = Path(output_dir) / output_file
 
-    try:
-        # if file exists, we don't have to create it again
-        file_list = FileList.load(output_file)
-        logger.warning("Reusing already created file!")
-    except FileNotFoundError:
-        file_list = _create_file_list(
-            methods,
-            compressions,
-            data_types,
-            min_sequence_length,
-            output_file,
-            samples_per_video_train,
-            samples_per_video_val,
-            source_dir_root,
-        )
+    # try:
+    #     # if file exists, we don't have to create it again
+    #     file_list = FileList.load(output_file)
+    #     logger.warning("Reusing already created file!")
+    # except FileNotFoundError:
+    file_list = _create_file_list(
+        methods,
+        compressions,
+        data_types,
+        min_sequence_length,
+        output_file,
+        samples_per_video_train,
+        samples_per_video_val,
+        source_dir_root,
+    )
 
     if target_dir_root:
         file_list.copy_to(Path(target_dir_root))

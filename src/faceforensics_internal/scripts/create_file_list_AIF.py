@@ -144,7 +144,7 @@ def _create_file_list(
                         selected_frames
                     ]
                     file_list.add_data_points(
-                        path_list=images,
+                        paths_face_images=images,
                         target_label=target,
                         split=split_name,
                         sampled_images_idx=sampled_images_idx,
@@ -166,9 +166,9 @@ def _create_file_list(
 @click.option(
     "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.FF_METHODS
 )
-@click.option("--compressions", "-c", multiple=True, default=[Compression.c40])
+@click.option("--compressions", "-c", multiple=True, default=[Compression.raw])
 @click.option(
-    "--data_types", "-d", multiple=True, default=[DataType.face_images_tracked]
+    "--data_types", "-d", multiple=True, default=[DataType.face_images_tracked_112]
 )
 @click.option("--samples_per_video_train", default=50)
 @click.option("--samples_per_video_val", default=50)
@@ -210,21 +210,21 @@ def create_file_list(
     )
     output_file = Path(output_dir) / output_file
 
-    try:
-        file_list = FileList.load(output_file)
-        logger.warning("Reusing already created file!")
-    except FileNotFoundError:
-        file_list = _create_file_list(
-            methods,
-            compressions,
-            data_types,
-            min_sequence_length,
-            output_file,
-            samples_per_video_train,
-            samples_per_video_val,
-            samples_per_video_test,
-            source_dir_root,
-        )
+    # try:
+    #     file_list = FileList.load(output_file)
+    #     logger.warning("Reusing already created file!")
+    # except FileNotFoundError:
+    file_list = _create_file_list(
+        methods,
+        compressions,
+        data_types,
+        min_sequence_length,
+        output_file,
+        samples_per_video_train,
+        samples_per_video_val,
+        samples_per_video_test,
+        source_dir_root,
+    )
 
     if target_dir_root:
         file_list.copy_to(Path(target_dir_root))

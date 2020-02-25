@@ -37,6 +37,7 @@ class DataType(StrEnum):
     bounding_boxes = auto()
     face_images = auto()
     face_images_tracked = auto()
+    face_images_tracked_112 = auto()
     full_images = auto()
     face_information = auto()
     videos = auto()
