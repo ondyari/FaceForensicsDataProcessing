@@ -151,7 +151,7 @@ def _create_file_list(
 @click.option(
     "--target_dir_root",
     default=None,
-    help="If specified, all files in the filelist are copied over to this location",
+    help="If specified, all files in the file_list are copied over to this location",
 )
 @click.option("--output_dir", required=True, type=click.Path())
 @click.option(
