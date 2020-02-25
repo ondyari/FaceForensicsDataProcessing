@@ -38,6 +38,7 @@ class DataType(StrEnum):
     face_images = auto()
     face_images_tracked = auto()
     face_images_tracked_112 = auto()
+    face_images_tracked_224 = auto()
     full_images = auto()
     face_information = auto()
     videos = auto()
@@ -104,6 +105,8 @@ class FaceForensicsDataStructure:
         FACE_SWAP.name,
         NEURAL_TEXTURES.name,
     ]
+
+    AIF_METHODS = [AIF_ORIGINAL.name, AIF_MANIPULATED.name]
 
     def __init__(
         self,

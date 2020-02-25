@@ -7,7 +7,9 @@ import numpy as np
 
 from faceforensics_internal.file_list_dataset import FileList
 from faceforensics_internal.splits import TEST
+from faceforensics_internal.splits import TEST_AIF
 from faceforensics_internal.splits import TEST_NAME
+from faceforensics_internal.splits import TEST_NAME_AIF
 from faceforensics_internal.splits import TRAIN
 from faceforensics_internal.splits import TRAIN_NAME
 from faceforensics_internal.splits import VAL
@@ -27,6 +29,9 @@ def _get_min_sequence_length(source_dir_data_structure):
         for video_folder in sorted(source_sub_dir.iterdir()):
             number_of_frames = len(list(video_folder.glob("*.png")))
             if min_length == -1 or min_length > number_of_frames:
+                logger.warning(
+                    f"{video_folder.name} has only {number_of_frames} frames!"
+                )
                 min_length = number_of_frames
 
     return min_length
@@ -51,14 +56,18 @@ def _select_frames(nb_images: int, samples_per_video: int) -> List[int]:
 
 
 def _create_file_list(
+    source_dir_root,
+    output_file,
     methods,
     compressions,
     data_types,
-    min_sequence_length,
-    output_file,
     samples_per_video_train,
     samples_per_video_val,
-    source_dir_root,
+    samples_per_video_test,
+    min_sequence_length,
+    aif,
+    flow,
+    image_size,
 ):
     file_list = FileList(
         root=source_dir_root, classes=methods, min_sequence_length=min_sequence_length
@@ -76,21 +85,31 @@ def _create_file_list(
     if (
         _min_sequence_length < samples_per_video_train
         or _min_sequence_length < samples_per_video_val
+        or _min_sequence_length < samples_per_video_test
     ):
         logger.warning(
             f"There is a sequence that has less frames "
             f"then you would like to sample: {_min_sequence_length}"
         )
 
-    for split, split_name in [(TRAIN, TRAIN_NAME), (VAL, VAL_NAME), (TEST, TEST_NAME)]:
+    if aif:
+        splits = [(TRAIN, TRAIN_NAME), (VAL, VAL_NAME), (TEST_AIF, TEST_NAME_AIF)]
+    else:
+        splits = [(TRAIN, TRAIN_NAME), (VAL, VAL_NAME), (TEST, TEST_NAME)]
+
+    for split, split_name in splits:
         for source_sub_dir in source_dir_data_structure.get_subdirs():
             target = source_sub_dir.parts[-3]
             for video_folder in sorted(source_sub_dir.iterdir()):
                 video_name = video_folder.name
-                if video_name.split("_")[0] in split:
 
+                if aif:
+                    split_check = video_name
+                else:
+                    split_check = video_name.split("_")[0]
+
+                if split_check in split:
                     paths_face_images = sorted(video_folder.glob("*.png"))
-
                     filtered_images_idx = []
 
                     # find all frames that have at least min_sequence_length-1 preceeding
@@ -103,15 +122,25 @@ def _create_file_list(
                     for list_idx, path_face_image in enumerate(paths_face_images):
                         image_idx = _img_name_to_int(path_face_image)
 
-                        flow_file_name = path_face_image.with_suffix(".flo").name
-                        path_flow_file = (
-                            source_sub_dir.parent
-                            / "flow_files_112"
-                            / video_name
-                            / flow_file_name
-                        )
+                        if flow:
+                            flow_file_name = path_face_image.with_suffix(".flo").name
+                            path_flow_file = (
+                                source_sub_dir.parent
+                                / f"flow_files_{image_size}"
+                                / video_name
+                                / flow_file_name
+                            )
 
-                        if path_flow_file.exists():
+                            if path_flow_file.exists():
+                                if last_idx + 1 != image_idx:
+                                    sequence_start = image_idx
+                                elif (
+                                    image_idx - sequence_start
+                                    >= min_sequence_length - 1
+                                ):
+                                    filtered_images_idx.append(list_idx)
+                                last_idx = image_idx
+                        else:
                             if last_idx + 1 != image_idx:
                                 sequence_start = image_idx
                             elif image_idx - sequence_start >= min_sequence_length - 1:
@@ -125,7 +154,7 @@ def _create_file_list(
                     elif split_name == VAL_NAME:
                         samples_per_video = samples_per_video_val
                     elif split_name == TEST_NAME:
-                        samples_per_video = -1
+                        samples_per_video = samples_per_video_test
 
                     selected_frames = _select_frames(
                         len(filtered_images_idx), samples_per_video
@@ -143,79 +172,97 @@ def _create_file_list(
 
     file_list.save(output_file)
     logger.info(f"{output_file} created.")
-    return file_list
 
 
 @click.command()
 @click.option("--source_dir_root", required=True, type=click.Path(exists=True))
-@click.option(
-    "--target_dir_root",
-    default=None,
-    help="If specified, all files in the file_list are copied over to this location",
-)
-@click.option("--output_dir", required=True, type=click.Path())
+@click.option("--output_dir", required=True, type=click.Path(exists=True))
 @click.option(
     "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.FF_METHODS
 )
-@click.option("--compressions", "-c", multiple=True, default=[Compression.c40])
 @click.option(
-    "--data_types", "-d", multiple=True, default=[DataType.face_images_tracked_112]
+    "--compressions",
+    "-c",
+    multiple=True,
+    default=[Compression.c40, Compression.c23, Compression.raw],
 )
 @click.option("--samples_per_video_train", default=270)
 @click.option("--samples_per_video_val", default=20)
+@click.option("--samples_per_video_test", default=-1)
 @click.option(
     "--min_sequence_length",
     default=1,
     help="Indicates how many preceeded consecutive frames make a frame eligible (i.e."
     "if set to 5 frame 0004 is eligible if frames 0000-0003 are present as well.",
 )
+@click.option("--aif", is_flag=True)
+@click.option("--flow", is_flag=True)
+@click.option("--image_size", default=224)
 def create_file_list(
     source_dir_root,
-    target_dir_root,
     output_dir,
     methods,
     compressions,
-    data_types,
     samples_per_video_train,
     samples_per_video_val,
+    samples_per_video_test,
     min_sequence_length,
+    aif,
+    flow,
+    image_size,
 ):
+    if aif:
+        methods = FaceForensicsDataStructure.AIF_METHODS
+        compressions = [Compression.raw]
+        samples_per_video_train = 0
+        samples_per_video_val = 0
+        samples_per_video_test = 50
 
+    if image_size == 112:
+        data_types = [DataType.face_images_tracked_112]
+    elif image_size == 224:
+        data_types = [DataType.face_images_tracked_224]
+    else:
+        raise ValueError("image_size needs to be either 112 or 224")
+
+    flow_part = f"_flow_files_{image_size}_" if flow else "_"
     output_file = (
         "_".join([str(method) for method in methods])
         + "_"
         + "_".join([str(compression) for compression in compressions])
         + "_"
         + "_".join([str(data_type) for data_type in data_types])
-        + "_flow_files_"
+        + f"{flow_part}"
         + str(samples_per_video_train)
         + "_"
         + str(samples_per_video_val)
+        + "_"
+        + str(samples_per_video_test)
         + "_"
         + str(min_sequence_length)
         + ".json"
     )
     output_file = Path(output_dir) / output_file
 
-    # try:
-    #     # if file exists, we don't have to create it again
-    #     file_list = FileList.load(output_file)
-    #     logger.warning("Reusing already created file!")
-    # except FileNotFoundError:
-    file_list = _create_file_list(
-        methods,
-        compressions,
-        data_types,
-        min_sequence_length,
-        output_file,
-        samples_per_video_train,
-        samples_per_video_val,
-        source_dir_root,
-    )
-
-    if target_dir_root:
-        file_list.copy_to(Path(target_dir_root))
-        file_list.save(output_file)
+    try:
+        # if file exists, we don't have to create it again
+        FileList.load(output_file)
+        logger.warning("Reusing already created file!")
+    except FileNotFoundError:
+        _create_file_list(
+            source_dir_root,
+            output_file,
+            methods,
+            compressions,
+            data_types,
+            samples_per_video_train,
+            samples_per_video_val,
+            samples_per_video_test,
+            min_sequence_length,
+            aif,
+            flow,
+            image_size,
+        )
 
     for split in [TRAIN_NAME, VAL_NAME, TEST_NAME]:
         data_set = FileList.get_dataset_form_file(output_file, split)
