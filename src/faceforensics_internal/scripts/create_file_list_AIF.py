@@ -108,12 +108,23 @@ def _create_file_list(
                     sequence_start = _img_name_to_int(images[0])
                     last_idx = sequence_start
                     for list_idx, image in enumerate(images):
+
                         image_idx = _img_name_to_int(image)
-                        if last_idx + 1 != image_idx:
-                            sequence_start = image_idx
-                        elif image_idx - sequence_start >= min_sequence_length - 1:
-                            filtered_images_idx.append(list_idx)
-                        last_idx = image_idx
+
+                        flow_file_name = image.with_suffix(".flo").name
+                        path_flow_file = (
+                            source_sub_dir.parent
+                            / "flow_files_112"
+                            / video_folder.stem
+                            / flow_file_name
+                        )
+
+                        if path_flow_file.exists():
+                            if last_idx + 1 != image_idx:
+                                sequence_start = image_idx
+                            elif image_idx - sequence_start >= min_sequence_length - 1:
+                                filtered_images_idx.append(list_idx)
+                            last_idx = image_idx
 
                     # for the test-set all frames are going to be taken
                     # otherwise distribute uniformly
@@ -159,9 +170,9 @@ def _create_file_list(
 @click.option(
     "--data_types", "-d", multiple=True, default=[DataType.face_images_tracked]
 )
-@click.option("--samples_per_video_train", default=100)
-@click.option("--samples_per_video_val", default=100)
-@click.option("--samples_per_video_test", default=-1)
+@click.option("--samples_per_video_train", default=50)
+@click.option("--samples_per_video_val", default=50)
+@click.option("--samples_per_video_test", default=50)
 @click.option(
     "--min_sequence_length",
     default=1,
@@ -187,7 +198,7 @@ def create_file_list(
         + "_".join([str(compression) for compression in compressions])
         + "_"
         + "_".join([str(data_type) for data_type in data_types])
-        + "_"
+        + "_flow_files_"
         + str(samples_per_video_train)
         + "_"
         + str(samples_per_video_val)
