@@ -1,6 +1,5 @@
 import json
 import logging
-import multiprocessing as mp
 from pathlib import Path
 from typing import Dict
 from typing import List
@@ -106,11 +105,20 @@ def _get_image_size(video_folder: Path):
 def _extract_faces_tracked_from_video(
     video_folder: Path, bounding_boxes: Path, face_images: Path
 ) -> bool:
-    with open(str((bounding_boxes / video_folder.name).with_suffix(".json")), "r") as f:
-        face_bb = json.load(f)
+    try:
+        with open(
+            str((bounding_boxes / video_folder.name).with_suffix(".json")), "r"
+        ) as f:
+            face_bb = json.load(f)
+    except FileNotFoundError as e:
+        print(e)
+        return False
 
     face_images = face_images / video_folder.with_suffix("").name
-    face_images.mkdir(exist_ok=True)
+    if face_images.exists():
+        return True
+    else:
+        face_images.mkdir()
 
     cap = VideoCapture(str(video_folder))
     width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
@@ -159,7 +167,7 @@ def extract_faces_tracked(source_dir_root, compressions, methods):
     bounding_boxes_dir_data_structure = FaceForensicsDataStructure(
         source_dir_root,
         compressions=compressions,
-        data_types=(DataType.face_information,),
+        data_types=(DataType.bounding_boxes,),
         methods=methods,
     )
 
@@ -180,7 +188,7 @@ def extract_faces_tracked(source_dir_root, compressions, methods):
         face_images.mkdir(exist_ok=True)
 
         # extract faces from videos in parallel
-        Parallel(n_jobs=mp.cpu_count())(
+        Parallel(n_jobs=1)(
             delayed(
                 lambda _video_folder: _extract_faces_tracked_from_video(
                     _video_folder, bounding_boxes, face_images
