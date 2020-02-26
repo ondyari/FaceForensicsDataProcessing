@@ -70,7 +70,11 @@ def _create_file_list(
     image_size,
 ):
     file_list = FileList(
-        root=source_dir_root, classes=methods, min_sequence_length=min_sequence_length
+        root=source_dir_root,
+        classes=methods,
+        min_sequence_length=min_sequence_length,
+        flow=flow,
+        image_size=image_size,
     )
     # use faceforensicsdatastructure to iterate elegantly over the correct
     # image folders
