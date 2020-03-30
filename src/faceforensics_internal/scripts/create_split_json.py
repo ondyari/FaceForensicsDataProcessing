@@ -11,14 +11,14 @@ from faceforensics_internal.utils import FaceForensicsDataStructure
 @click.option("--source_dir_root", required=True, type=click.Path(exists=True))
 @click.option("--compressions", "-c", multiple=True, default=[Compression.raw])
 @click.option(
-    "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.DFDC_METHODS
+    "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.GOOGLE_METHODS
 )
 def create_split_json(source_dir_root, compressions, methods):
     source_dir_data_structure = FaceForensicsDataStructure(
         source_dir_root,
         methods=methods,
         compressions=compressions,
-        data_types=(DataType.face_images_tracked,),
+        data_types=(DataType.face_information,),
     )
 
     video_names = []
@@ -27,7 +27,7 @@ def create_split_json(source_dir_root, compressions, methods):
             video_name = video_path.stem
             video_names.append([video_name])
 
-    with open("train_dfdc.json", "w") as outfile:
+    with open("train_ff_dfdc_google.json", "w") as outfile:
         json.dump(video_names, outfile)
 
 

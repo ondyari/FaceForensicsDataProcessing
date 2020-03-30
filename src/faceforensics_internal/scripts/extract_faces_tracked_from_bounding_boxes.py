@@ -152,11 +152,12 @@ def _extract_faces_tracked_from_video(
 
 @click.command()
 @click.option("--source_dir_root", required=True, type=click.Path(exists=True))
+@click.option("--target_dir_root", required=True, type=click.Path(exists=True))
 @click.option("--compressions", "-c", multiple=True, default=[Compression.c40])
 @click.option(
-    "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.ALL_METHODS
+    "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.GOOGLE_METHODS
 )
-def extract_faces_tracked(source_dir_root, compressions, methods):
+def extract_faces_tracked(source_dir_root, target_dir_root, compressions, methods):
     videos_data_structure = FaceForensicsDataStructure(
         source_dir_root,
         compressions=compressions,
@@ -165,14 +166,14 @@ def extract_faces_tracked(source_dir_root, compressions, methods):
     )
 
     bounding_boxes_dir_data_structure = FaceForensicsDataStructure(
-        source_dir_root,
+        target_dir_root,
         compressions=compressions,
         data_types=(DataType.bounding_boxes,),
         methods=methods,
     )
 
     face_images_tracked_dir_data_structure = FaceForensicsDataStructure(
-        source_dir_root,
+        target_dir_root,
         compressions=compressions,
         data_types=(DataType.face_images_tracked,),
         methods=methods,

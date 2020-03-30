@@ -165,7 +165,11 @@ def _filter_face_information(face_information: Path, masks: Union[Path, None], o
 
             if not last_location:
                 locations = sorted(locations, reverse=True, key=_largest_face_location)
-                mask_bounding_box = masks_json[frame]
+                try:
+                    mask_bounding_box = masks_json[frame]
+                except KeyError:
+                    logger.warning(f"KeyError: {face_information}, frame {frame}")
+                    continue
                 if len(mask_bounding_box) == 0:
                     last_location = locations[0]
                     resulting_face_locations[frame] = last_location
@@ -189,7 +193,11 @@ def _filter_face_information(face_information: Path, masks: Union[Path, None], o
                 locations, key=lambda location: closest_center(last_location, location)
             )
 
-            mask_bounding_box = masks_json[frame]
+            try:
+                mask_bounding_box = masks_json[frame]
+            except KeyError:
+                logger.warning(f"KeyError: {face_information}, frame {frame}")
+                continue
             # if there is no mask make sure the largest face is close enough to the last
             # face tracked
             if len(mask_bounding_box) == 0:
@@ -272,9 +280,9 @@ def _filter_face_information(face_information: Path, masks: Union[Path, None], o
 @click.command()
 @click.option("--source_dir_root", required=True, type=click.Path(exists=True))
 @click.option(
-    "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.FF_METHODS
+    "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.GOOGLE_METHODS
 )
-@click.option("--compression", "-c", default=Compression.c40)
+@click.option("--compression", "-c", default=Compression.raw)
 @click.option("--cpu_count", required=False, type=click.INT, default=mp.cpu_count())
 def aggregate_masks_and_face_locations(
     source_dir_root, methods, compression, cpu_count
