@@ -66,6 +66,7 @@ class Method:
 ACTORS = Method("actors", is_real=True)
 YOUTUBE = Method("youtube", is_real=True)
 AIF_ORIGINAL = Method("AIF_original", is_real=True)
+DFDC_REAL = Method("dfdc_real", is_real=True)
 
 DEEP_FAKE_DETECTION = Method("DeepFakeDetection", is_real=False)
 DEEPFAKES = Method("Deepfakes", is_real=False)
@@ -73,6 +74,7 @@ FACE2FACE = Method("Face2Face", is_real=False)
 FACE_SWAP = Method("FaceSwap", is_real=False)
 NEURAL_TEXTURES = Method("NeuralTextures", is_real=False)
 AIF_MANIPULATED = Method("AIF_manipulated", is_real=False)
+DFDC_FAKE = Method("dfdc_fake", is_real=False)
 
 
 class FaceForensicsDataStructure:
@@ -87,6 +89,8 @@ class FaceForensicsDataStructure:
         DEEP_FAKE_DETECTION.name: DEEP_FAKE_DETECTION,
         AIF_ORIGINAL.name: AIF_ORIGINAL,
         AIF_MANIPULATED.name: AIF_MANIPULATED,
+        DFDC_REAL.name: DFDC_REAL,
+        DFDC_FAKE.name: DFDC_FAKE,
     }
 
     ALL_METHODS = list(METHODS.keys())
@@ -107,6 +111,8 @@ class FaceForensicsDataStructure:
     ]
 
     AIF_METHODS = [AIF_ORIGINAL.name, AIF_MANIPULATED.name]
+
+    DFDC_METHODS = [DFDC_REAL.name, DFDC_FAKE.name]
 
     def __init__(
         self,
