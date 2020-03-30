@@ -46,7 +46,7 @@ def extract_bounding_boxes_from_video(video_path: Path, target_sub_dir: Path):
 
 @click.command()
 @click.option("--source_dir_root", required=True, type=click.Path(exists=True))
-@click.option("--target_dir_root", required=True, type=click.Path(exists=True))
+@click.option("--target_dir_root", required=True, type=click.Path())
 @click.option(
     "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.GOOGLE_METHODS
 )
