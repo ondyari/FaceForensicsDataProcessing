@@ -1,7 +1,6 @@
 """Extract mask bounding box from mask video indicating the manipulated area."""
 import json
 import logging
-import multiprocessing as mp
 from pathlib import Path
 
 import click
@@ -47,14 +46,14 @@ def extract_bounding_boxes_from_video(video_path: Path, target_sub_dir: Path):
 
 @click.command()
 @click.option("--source_dir_root", required=True, type=click.Path(exists=True))
+@click.option("--target_dir_root", required=True, type=click.Path(exists=True))
 @click.option(
-    "--methods",
-    "-m",
-    multiple=True,
-    default=FaceForensicsDataStructure.ALL_MANIPULATED_METHODS,
+    "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.GOOGLE_METHODS
 )
-@click.option("--cpu_count", required=False, type=click.INT, default=mp.cpu_count())
-def extract_bounding_box_from_masks(source_dir_root, methods, cpu_count):
+@click.option("--cpu_count", required=False, type=click.INT, default=8)
+def extract_bounding_box_from_masks(
+    source_dir_root, target_dir_root, methods, cpu_count
+):
 
     # use FaceForensicsDataStructure to iterate over the correct image folders
     source_dir_data_structure = FaceForensicsDataStructure(
@@ -67,7 +66,7 @@ def extract_bounding_box_from_masks(source_dir_root, methods, cpu_count):
     # this will be used to iterate the same way as the source dir
     # -> create same data structure again
     target_dir_data_structure = FaceForensicsDataStructure(
-        source_dir_root,
+        target_dir_root,
         methods=methods,
         compressions=(Compression.masks,),
         data_types=(DataType.bounding_boxes,),

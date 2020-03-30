@@ -114,6 +114,8 @@ class FaceForensicsDataStructure:
 
     DFDC_METHODS = [DFDC_REAL.name, DFDC_FAKE.name]
 
+    GOOGLE_METHODS = [ACTORS.name, DEEP_FAKE_DETECTION.name]
+
     def __init__(
         self,
         root_dir: str,
