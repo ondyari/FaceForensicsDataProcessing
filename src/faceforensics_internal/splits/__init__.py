@@ -9,7 +9,7 @@ def flatten(l: list):
 
 
 TRAIN, TRAIN_NAME = (
-    flatten(json.load((__current_directory / "train.json").open())),
+    flatten(json.load((__current_directory / "train_dfdc.json").open())),
     "train",
 )
 VAL, VAL_NAME = flatten(json.load((__current_directory / "val.json").open())), "val"

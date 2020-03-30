@@ -182,7 +182,12 @@ def _create_file_list(
 @click.option("--source_dir_root", required=True, type=click.Path(exists=True))
 @click.option("--output_dir", required=True, type=click.Path(exists=True))
 @click.option(
-    "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.FF_METHODS
+    "--methods",
+    "-m",
+    multiple=True,
+    default=[
+        FaceForensicsDataStructure.FF_METHODS + FaceForensicsDataStructure.DFDC_METHODS
+    ],
 )
 @click.option(
     "--compressions",
@@ -195,7 +200,7 @@ def _create_file_list(
 @click.option("--samples_per_video_test", default=-1)
 @click.option(
     "--min_sequence_length",
-    default=1,
+    default=8,
     help="Indicates how many preceeded consecutive frames make a frame eligible (i.e."
     "if set to 5 frame 0004 is eligible if frames 0000-0003 are present as well.",
 )
@@ -248,25 +253,25 @@ def create_file_list(
     )
     output_file = Path(output_dir) / output_file
 
-    try:
-        # if file exists, we don't have to create it again
-        FileList.load(output_file)
-        logger.warning("Reusing already created file!")
-    except FileNotFoundError:
-        _create_file_list(
-            source_dir_root,
-            output_file,
-            methods,
-            compressions,
-            data_types,
-            samples_per_video_train,
-            samples_per_video_val,
-            samples_per_video_test,
-            min_sequence_length,
-            aif,
-            flow,
-            image_size,
-        )
+    # try:
+    #     # if file exists, we don't have to create it again
+    #     FileList.load(output_file)
+    #     logger.warning("Reusing already created file!")
+    # except FileNotFoundError:
+    _create_file_list(
+        source_dir_root,
+        output_file,
+        methods,
+        compressions,
+        data_types,
+        samples_per_video_train,
+        samples_per_video_val,
+        samples_per_video_test,
+        min_sequence_length,
+        aif,
+        flow,
+        image_size,
+    )
 
     for split in [TRAIN_NAME, VAL_NAME, TEST_NAME]:
         data_set = FileList.get_dataset_form_file(output_file, split)
