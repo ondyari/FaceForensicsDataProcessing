@@ -9,16 +9,16 @@ from faceforensics_internal.utils import FaceForensicsDataStructure
 
 @click.command()
 @click.option("--source_dir_root", required=True, type=click.Path(exists=True))
-@click.option("--compressions", "-c", multiple=True, default=[Compression.c40])
+@click.option("--compressions", "-c", multiple=True, default=[Compression.raw])
 @click.option(
-    "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.ALL_METHODS
+    "--methods", "-m", multiple=True, default=FaceForensicsDataStructure.DFDC_METHODS
 )
 def create_split_json(source_dir_root, compressions, methods):
     source_dir_data_structure = FaceForensicsDataStructure(
         source_dir_root,
         methods=methods,
         compressions=compressions,
-        data_types=(DataType.videos,),
+        data_types=(DataType.face_images_tracked,),
     )
 
     video_names = []
@@ -27,7 +27,7 @@ def create_split_json(source_dir_root, compressions, methods):
             video_name = video_path.stem
             video_names.append([video_name])
 
-    with open("test_aif.json", "w") as outfile:
+    with open("train_dfdc.json", "w") as outfile:
         json.dump(video_names, outfile)
 
 
